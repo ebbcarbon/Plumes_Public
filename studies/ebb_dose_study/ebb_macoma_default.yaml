@@ -1,0 +1,107 @@
+description: 'Ebb default profile: Macoma (case03) with the port spacing corrected
+  to 2 ft (0.6096 m; the archived project says 2 m -- a unit slip), ambient chemistry
+  held to the 17 m seabed below the 4 m measured row, and the effluent as TA at the
+  intake DIC'
+diffuser:
+  port_diameter: 0.0127
+  port_elevation: 15.0
+  vertical_angle: 45.0
+  horizontal_angle: 90.0
+  n_ports: 25
+  port_spacing: 0.6096
+  port_depth: 2.0
+effluent:
+  flow: 0.00021906318194444445
+  salinity: 35.0
+  temperature: 10.0
+  pollutant: 100000.0
+mixing_zone:
+  acute_distance: 20.7
+  chronic_distance: 207.0
+ambient:
+  levels:
+  - depth: 0.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 30.9
+    temperature: 11.2
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 3.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.2
+    temperature: 10.4
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 6.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.2
+    temperature: 9.69
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 9.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.7
+    temperature: 9.44
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 12.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.8
+    temperature: 9.34
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 15.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.9
+    temperature: 9.22
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  chemistry:
+  - depth: 1.0
+    total_alkalinity: 3000.0
+    dic: 2500.0
+    calcium: 100.0
+  - depth: 2.0
+    total_alkalinity: 2900.0
+    dic: 2500.0
+    calcium: 100.0
+  - depth: 3.0
+    total_alkalinity: 2900.0
+    dic: 2500.0
+    calcium: 100.0
+  - depth: 4.0
+    total_alkalinity: 2850.0
+    dic: 2450.0
+    calcium: 100.0
+  - depth: 6.0
+    total_alkalinity: 2850.0
+    dic: 2450.0
+    calcium: 100.0
+  - depth: 9.0
+    total_alkalinity: 2850.0
+    dic: 2450.0
+    calcium: 100.0
+  - depth: 12.0
+    total_alkalinity: 2850.0
+    dic: 2450.0
+    calcium: 100.0
+  - depth: 15.0
+    total_alkalinity: 2850.0
+    dic: 2450.0
+    calcium: 100.0
+  - depth: 17.0
+    total_alkalinity: 2850.0
+    dic: 2450.0
+    calcium: 100.0
+near_field:
+  max_rise_or_fall: 3
+  output_interval: 10
+effluent_chemistry:
+  total_alkalinity: 4000.0
+  dic: 2500.0

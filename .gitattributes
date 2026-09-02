@@ -1,0 +1,10 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Exe-generated reference data. These are byte-for-byte validation targets: the
+# .dat writer must reproduce them exactly, including CRLF line endings. Marking
+# them -text stops git normalising line endings on commit/checkout, so the
+# round-trip tests behave identically on Windows, Linux and CI.
+*.prj -text
+*.dat -text
+*.csv -text

@@ -1,0 +1,90 @@
+diffuser:
+  port_diameter: 0.076
+  port_elevation: 0.31
+  vertical_angle: 45.0
+  horizontal_angle: 30.0
+  n_ports: 18
+  port_spacing: 6.1
+  port_depth: 11.0
+effluent:
+  flow: 0.3505010911111111
+  temperature: 2.63
+  pollutant: 100.0
+mixing_zone:
+  acute_distance: 10.2
+  chronic_distance: 102.0
+ambient:
+  levels:
+  - depth: 0.0
+    current_speed: 0.09
+    salinity: 32.0
+    temperature: 14.0
+    farfield_speed: 0.05
+  - depth: 2.0
+    current_speed: 0.085
+    salinity: 32.0
+    temperature: 12.0
+    farfield_speed: 0.05
+  - depth: 4.0
+    current_speed: 0.07
+    salinity: 32.0
+    temperature: 8.0
+    farfield_speed: 0.05
+  - depth: 6.0
+    current_speed: 0.065
+    salinity: 32.0
+    temperature: 8.0
+    farfield_speed: 0.05
+  - depth: 8.0
+    current_speed: 0.06
+    salinity: 32.0
+    temperature: 8.0
+    farfield_speed: 0.05
+  - depth: 10.0
+    current_speed: 0.055
+    salinity: 32.0
+    temperature: 8.0
+    farfield_speed: 0.05
+  - depth: 12.0
+    current_speed: 0.05
+    salinity: 32.0
+    temperature: 8.0
+    farfield_speed: 0.05
+  chemistry:
+  - depth: 0.0
+    total_alkalinity: 1800.0
+    dic: 1600.0
+    ph: 7.8
+    calcium: 0.0
+  - depth: 5.0
+    total_alkalinity: 1800.0
+    dic: 1600.0
+    ph: 7.8
+    calcium: 0.0
+  - depth: 10.0
+    total_alkalinity: 1800.0
+    dic: 1600.0
+    ph: 7.8
+    calcium: 0.0
+  - depth: 15.0
+    total_alkalinity: 1800.0
+    dic: 1600.0
+    ph: 7.8
+    calcium: 0.0
+  dissolved_oxygen:
+  - depth: 0.0
+    dissolved_oxygen: 10.0
+    cbod5: 0.5
+    nbod5: 0.3
+  - depth: 5.0
+    dissolved_oxygen: 8.0
+    cbod5: 0.5
+    nbod5: 0.3
+  - depth: 10.0
+    dissolved_oxygen: 7.0
+    cbod5: 0.5
+    nbod5: 0.3
+  - depth: 15.0
+    dissolved_oxygen: 5.0
+    cbod5: 0.5
+    nbod5: 0.3

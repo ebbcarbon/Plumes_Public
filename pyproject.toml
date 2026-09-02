@@ -1,0 +1,113 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "plumes2"
+version = "0.0.1.dev0"
+description = "Python re-implementation of PLUMES2.0 (UM3 near-field + Brooks far-field, with carbonate chemistry and DO/BOD)"
+readme = "README.md"
+requires-python = ">=3.13"
+# MIT covers the port's own code (everything the wheel ships). upstream/license.md is
+# Battelle's BSD-2 notice for the *upstream* snapshot only, and stays out of this field;
+# the two non-redistributable PDFs under references/ are neither packaged nor licensed.
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Ebb Carbon" }]
+keywords = ["plume", "dilution", "UM3", "mixing zone", "outfall", "carbonate chemistry"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+]
+
+# Runtime dependencies. The physics is pure NumPy; the carbonate speciation is
+# PyCO2SYS, which the manual says is the validated successor of the CO2SYS routines
+# the exe embedded, so it is a runtime requirement rather than a comparison tool
+# (see PLAN.md, Phase 4).
+dependencies = [
+    "numpy>=2.1",
+    "scipy>=1.14",       # profile interpolation, Brent root-finding
+    "pandas>=2.2",       # CSV table I/O and tabular results
+    "matplotlib>=3.9",   # the ~20 Visual Plumes plot types
+    "pyyaml>=6.0",       # native YAML case files
+    "pydantic>=2.9",     # input validation (physical ranges, monotonic profiles)
+    "PyCO2SYS>=1.8.3",   # carbonate speciation; constant selections tracked explicitly
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    # ⚠️ Use `-n auto --dist loadfile`, never bare `-n auto`. Per-file distribution keeps every
+    # test in a module on one worker, which is what preserves the module- and session-scoped
+    # fixtures the suite is built around -- `ledger_outcomes` above all, but also
+    # `test_do_bod.py`'s three shared integrations. Bare `-n auto` scatters them and each
+    # worker rebuilds its own, turning the shared measurement back into N measurements.
+    "pytest-xdist>=3.6",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "pandas-stubs",
+    "types-PyYAML",
+    # The API reference. pdoc renders the docstrings that are already in the modules -- no config
+    # file, no separate source tree to keep in step with the code, and self-contained HTML, which
+    # is the same constraint the run report and the validation report are held to.
+    "pdoc>=15.0",
+]
+# Notebook-driven iteration.
+notebook = [
+    "jupyterlab>=4.3",
+    "ipykernel>=6.29",
+    "ipywidgets>=8.1",
+]
+
+[project.scripts]
+plumes2 = "plumes2.cli:main"
+
+[project.urls]
+Repository = "https://github.com/ebbcarbon/plumes2-python"
+Issues = "https://github.com/ebbcarbon/plumes2-python/issues"
+Upstream = "https://github.com/ssmc-uw/PLUMES2.0"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/plumes2"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "golden: validates against a .dat produced by the upstream exe",
+    "manual: validates against a number printed in upstream/Docs/*.pdf",
+    # ⚠️ Enforced, not asserted: `tests/conftest.py` reports every unmarked test whose call
+    # phase exceeds SLOW_SECONDS, and `--strict-slow-marker` turns that into a failure. The
+    # marker sat on 18 tests while a dozen unmarked ledger targets took 2-10 s, which made
+    # `-m "not slow"` look like a fast lane while saving a tenth of the clock.
+    "slow: takes more than a second (enforced by the guard in tests/conftest.py)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "NPY", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["plumes2", "tests"]
+
+[[tool.mypy.overrides]]
+# Neither ships type information. Only scipy.special.erf is used; PyCO2SYS is reached
+# solely through plumes2.chem.speciation, which types its own boundary.
+module = ["scipy.*", "PyCO2SYS.*"]
+ignore_missing_imports = true
+
+[tool.mypy]
+python_version = "3.13"
+files = ["src/plumes2"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
