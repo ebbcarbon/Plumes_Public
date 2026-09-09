@@ -586,6 +586,12 @@ _FILES_PUBLISHING_COVERAGE = (
     "README.md",
 )
 
+#: Of those, the ones `.publicignore` keeps out of the public snapshot (`ebbcarbon/Plumes_Public`,
+#: PLAN.md withheld 2026-09-08). Absent there, the file is skipped; absent *here*, any other file
+#: in the list is still a failure. The first public CI run after the export (2026-09-09) fell over
+#: on exactly this: an unconditional `read_text` of a file the export had dropped.
+_WITHHELD_FROM_PUBLIC = frozenset({"notes/PLAN.md"})
+
 #: `n of m` as these files write it, with the thousands of other number pairs in them excluded by
 #: requiring the literal "of" and a following word that commits it to being a coverage claim.
 _PUBLISHED_FRACTION = re.compile(
@@ -651,7 +657,11 @@ def test_the_published_coverage_figures_are_not_stale() -> None:
 
     found = 0
     for name in _FILES_PUBLISHING_COVERAGE:
-        text = (REPO_ROOT / name).read_text(encoding="utf-8")
+        path = REPO_ROOT / name
+        if not path.exists():
+            assert name in _WITHHELD_FROM_PUBLIC, f"{name} is missing and is not a withheld file"
+            continue  # the public snapshot: check the three documents it does carry
+        text = path.read_text(encoding="utf-8")
         for line in text.split("\n"):
             # ⚠️ A struck-through figure is a retraction kept on purpose -- "a retraction that
             # leaves no trace is how a project forgets what it already got wrong", per the ledger
