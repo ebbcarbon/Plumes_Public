@@ -36,7 +36,7 @@ for the reader:
 * The **number of plot flags is build-dependent** -- the Dec-2025 build writes one
   near-field plot flag where 2026 builds write four. Both blocks are therefore read
   greedily up to the next text record, making the last integer the name count. Hard
-  coding four would reject `reference_cases/case00_macoma_legacy_fps/Macoma.prj`.
+  coding four would reject `reference_cases/case00_legacy_fps/project.prj`.
 
 This module is deliberately a *lossless, low-level* view: it keeps all 20 table
 rows including the zero padding, and every flag whose meaning we have not yet

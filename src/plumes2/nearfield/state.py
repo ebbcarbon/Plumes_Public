@@ -67,8 +67,8 @@ which is exactly what the pair shows, their measured constants agreeing to 0.25 
 rate to about 1 %, and it is how the two rounding traps below were caught.
 
 ⚠️ **The `.dat` diffuser echo rounds to two decimals.** Its `P-dia` of "0.01" is 0.0127 and
-its `Ttl-flo` of "0.01" in (cms) is 0.005 -- both the Macoma baseline. Only the *simulation
-results* table prints three decimals. Read inputs from the `.prj`, never from the echo.
+its `Ttl-flo` of "0.01" in (cms) is 0.005 -- both the archived-diffuser baseline. Only the
+*simulation results* table prints three decimals. Read inputs from the `.prj`, never from the echo.
 
 Coordinates, confirmed against the traces:
 
@@ -111,8 +111,10 @@ __all__ = [
 #: while every test still passes.
 GRAVITY = _GRAVITY
 
-#: Length of the packed state vector: m, m*U (3), m*T, m*S, position (3).
-STATE_SIZE = 9
+#: Length of the packed state vector: m, m*U (3), m*T, m*S, position (3), m*excess density.
+#: The last is the effluent's `excess_density` tracer -- conserved as `m * excess`, exactly as
+#: salinity is conserved as `m * S`, and read back as `excess / D`.
+STATE_SIZE = 10
 
 
 def horizontal_unit(bearing_degrees: float) -> NDArray[np.float64]:
@@ -193,6 +195,10 @@ class LcvState:
     temperature: float
     salinity: float
     position: NDArray[np.float64]
+    #: Density the dissolved load adds beyond the equation of state's reading of `salinity`,
+    #: kg/m3, at this instant -- the effluent's `excess_density` diluted by `D`. Zero unless the
+    #: case declares one. Enters `density`, and nothing else.
+    excess_density: float = 0.0
 
     @property
     def speed(self) -> float:
@@ -215,13 +221,16 @@ class LcvState:
         `plumes2.seawater.density_of`. Callers in the solver pass zero anyway, because the exe's
         EOS is a one-atmosphere formula and the 3rd edition says so outright.
         """
-        return float(
-            density_of(
-                self.salinity,
-                self.temperature,
-                pressure_decibars,
-                equation_of_state=equation_of_state,
+        return (
+            float(
+                density_of(
+                    self.salinity,
+                    self.temperature,
+                    pressure_decibars,
+                    equation_of_state=equation_of_state,
+                )
             )
+            + self.excess_density
         )
 
     def pack(self) -> NDArray[np.float64]:
@@ -231,6 +240,7 @@ class LcvState:
                 self.mass * self.velocity,
                 [self.mass * self.temperature, self.mass * self.salinity],
                 self.position,
+                [self.mass * self.excess_density],
             )
         )
 
@@ -247,6 +257,7 @@ def unpack(vector: NDArray[np.float64]) -> LcvState:
         velocity=np.asarray(vector[1:4], dtype=np.float64) / mass,
         temperature=float(vector[4]) / mass,
         salinity=float(vector[5]) / mass,
+        excess_density=float(vector[9]) / mass,
         position=np.asarray(vector[6:9], dtype=np.float64),
     )
 
@@ -262,12 +273,10 @@ def initial_radius(case: Case) -> float:
         c = 0.61   step-1 plume diameter 0.010      0.0127*0.781  -> prints 0.010
 
     Note this also corrects the port diameter: the `.dat` diffuser echo prints `P-dia` to
-    **two** decimals, so its "0.01" is 0.0127 rounded -- the Macoma baseline all along. The
-    same two-decimal trap applies to `Ttl-flo` in (cms), whose "0.01" is 0.005.
+    **two** decimals, so its "0.01" is 0.0127 rounded -- the archived-diffuser baseline all along.
+    The same two-decimal trap applies to `Ttl-flo` in (cms), whose "0.01" is 0.005.
     """
-    return (case.diffuser.port_diameter / 2.0) * math.sqrt(
-        case.near_field.contraction_coefficient
-    )
+    return (case.diffuser.port_diameter / 2.0) * math.sqrt(case.near_field.contraction_coefficient)
 
 
 def exit_speed(case: Case) -> float:
@@ -281,9 +290,7 @@ def exit_speed(case: Case) -> float:
     change in `c` -- and it recovers each archived run's flow to within about 1 %.
     """
     diffuser = case.diffuser
-    contracted_area = (
-        math.pi * initial_radius(case) ** 2
-    )  # == c * pi * (d/2)**2, by construction
+    contracted_area = math.pi * initial_radius(case) ** 2  # == c * pi * (d/2)**2, by construction
     return case.effluent.flow / (diffuser.n_ports * contracted_area)
 
 
@@ -312,6 +319,8 @@ def initial_state(
             equation_of_state=case.near_field.equation_of_state,
         )
     )
+    # The dissolved load the salinity does not account for rides along as a density-only tracer.
+    effluent_density += effluent.excess_density
     effluent_mass = effluent_density * math.pi * radius * radius * thickness
 
     state = LcvState(
@@ -322,6 +331,7 @@ def initial_state(
         position=np.array(
             [diffuser.x_position, diffuser.y_position, -diffuser.port_depth], dtype=np.float64
         ),
+        excess_density=effluent.excess_density,
     )
     geometry = LcvGeometry(
         radius_constant=radius * radius * effluent_density * speed / effluent_mass,

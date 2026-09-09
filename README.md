@@ -12,22 +12,24 @@ Status: **Phases 0–8 complete; Phase 9, the dose study, has run.** The file I/
 byte-exactly, the near-field solver clears upstream's own 0.5 % acceptance bar, Brooks is
 confirmed against the exe's own independent calculator, the chemistry and dissolved-oxygen
 modules reproduce every archived trace, and the validation ledger is *executable* and
-**complete — 191 of 191 countable rows**: `plumes2 validate` re-derives every published
+**complete — 195 of 195 countable rows**: `plumes2 validate` re-derives every published
 number rather than restating a typed one.
 
 ⚠️ **Parity is not the goal, it is the floor.** What the port exists to do — predict the
 pH and mineral saturation of an alkalinity-elevated plume — is a question the executable
 cannot answer at all.
 
-**The study has run** (2026-08-26; rerun 2026-09-01 with the port spacing corrected to its true
-2 ft — the archived project's 2 m was a unit slip, and the near-field results did not move) at
-Ebb's default profile — the Macoma configuration, with the ambient chemistry held from its
-deepest measured row (4 m) to the seabed as the one stated assumption. Headline: **below TA ≈ 4340 µmol/kg at the intake DIC (2500) the discharge never
-supersaturates brucite, even undiluted**; above it the centreline window is centimetres and seconds
-(≤ 25 cm, ≤ 10 s at TA 20 000) and nothing reaches a mixing-zone boundary (≤ +0.04 pH). Every pH on
-that axis is parity-checked: the exe's own carbonate solver stays within **0.011–0.025 pH** of
-PyCO2SYS from pH 8.4 to 12.0 ([`case47`](reference_cases/case47_dose_parity/README.md)). The
-centreline is read through the exe's default **parabolic** profile — the exe offers three
+**The study has run** (2026-08-26; rerun 2026-09-09 at the site's **5900 L/h** with intake water as the
+effluent, on both ambients — the 2 cm/s acute and the 5 cm/s chronic current — and with the site's
+ambient chemistry, **TA 2146 / DIC 2092 µmol/kg, uniform in depth**) at Ebb's default profile, the
+Macoma configuration. Headline: **below TA ≈ 3660 µmol/kg at the intake DIC (2092) the discharge
+never supersaturates brucite, even undiluted** — ≈ 3040 if it leaves at 30 °C; above it the
+centreline window is centimetres and seconds (≤ 42 cm, ≤ 7.5 s at TA 20 000), and the mixing-zone
+boundaries, in receiving water at pH 7.73, see at most +0.32 pH. Four named effluents at the same geometry show that the hydroxide per
+kilogram of effluent sets the window, not its pH. Every pH on the dose axis is parity-checked: the exe's
+own carbonate solver stays within **0.011–0.025 pH** of PyCO2SYS from pH 8.4 to 12.0
+([`case47`](reference_cases/case47_dose_parity/README.md)). The centreline is read through the exe's
+default **parabolic** profile — the exe offers three
 ([`case48`](reference_cases/case48_similarity_profiles/README.md)) and the port implements all of
 them plus the literature's Gaussian, selectable per case. `Ω_brucite` is an **upper bound** (no ion
 pairing); `Ω_brucite = 1` is a pH threshold, ≈ 9.43 total at S 32 / 10 °C.
@@ -57,7 +59,7 @@ Then `python docs/build.py` for the rendered API reference.
 | **a trace** | a `.dat` output file the exe wrote. The archive of traces in `reference_cases/` is what every accuracy figure is measured against. |
 | **the operator** | the person who runs the exe by hand and makes the modelling decisions (profile choice, constants, what to send the maintainers) — the exe is GUI-only, so exe runs cannot be scripted. |
 | **Ebb** | [Ebb Carbon](https://ebbcarbon.com), whose alkalinity-elevated discharge is the reason this port exists. |
-| **Macoma** | the diffuser/site configuration Ebb uses as its default profile — archived as `reference_cases/case03_macoma_carbonate/` and the geometry of the dose study. |
+| **Macoma** | Ebb's site, and the configuration the dose study runs at: 25 ports at 2 ft, 5900 L/h of intake water, 20.7 / 207 ft mixing zones, ambient TA 2146 / DIC 2092. The archived exe runs in `reference_cases/case00`–`case12` and `case24` were an *earlier entry* of that diffuser with known slips (2 m, 35 psu, 0.219 L/s, zones in metres) and are called "the archived diffuser", never Macoma; the site's own case, run in the exe on 2026-09-09, is `reference_cases/case55_macoma_site/`. |
 | **a ledger row** | one numbered finding in [`notes/LEDGER.md`](notes/LEDGER.md), re-derived by `plumes2 validate`; docs cite them as "row 262". |
 
 ## What is upstream and what is new here
@@ -69,12 +71,13 @@ This distinction matters, so it is enforced by directory:
 | **[`upstream/`](upstream/)** | Verbatim snapshot of [ssmc-uw/PLUMES2.0](https://github.com/ssmc-uw/PLUMES2.0) — the Windows executable, both user manuals, the shipped example project, icons, and the upstream README/licence/disclaimer. | **No.** Treat as read-only reference. |
 | `src/plumes2/` | New. The Python port. | yes |
 | `tests/` | New. Validation suite. | yes |
-| `reference_cases/` | New. Exe-generated runs used as validation targets (case00–case50), each with a write-up of what it revealed. The `.dat`/`.csv`/`.prj` files inside are exe output — do not hand-edit them; the READMEs are ours. `pending/` holds generated experiments awaiting the exe. | READMEs yes, data no |
+| `reference_cases/` | New. Exe-generated runs used as validation targets (case00–case54), each with a write-up of what it revealed. The `.dat`/`.csv`/`.prj` files inside are exe output — do not hand-edit them; the READMEs are ours. `pending/` holds generated experiments awaiting the exe. | READMEs yes, data no |
 | `references/` | Third-party sources the manuals cite but do not reproduce (the 1985, 1994 and 2003 EPA reports, and three non-EPA papers). ⚠️ Millero (2010) and Cenedese & Linden (2014) are **not** redistributable — see its README before publishing this repo. | README yes, PDFs no |
 | `studies/` | New. The dose study and its dry run, with write-ups; the scripts that generate exe experiments; `example_case.yaml`, the shipped example in the port's native format. | yes |
 | [`examples/`](examples/README.md) | New. plumes2 as a called physics package: plain-CSV ambient tables, a runnable script, its expected output. Executed by the test suite. | yes |
 | `USER_GUIDE.md` | New. Every command, field, default and column spelled out, pinned to the code by `tests/test_user_guide.py`. | yes |
 | `PORTING_THE_PHYSICS.md` | New. The write-up for people *using* the model: accuracy, where the exe contradicts its own manual, and the defect flags. | yes |
+| `reports/` | Local only: where `plumes2 report` writes its PDFs. The whole folder is ignored by git, so a clone has no `reports/` directory; a report goes into the repository only by a deliberate `git add -f`. | no |
 | [`notes/`](notes/) | New. The development record: `PLAN.md` (current state and next actions), `PLAN_HISTORY.md` (the frozen build log — search it, do not read it), `LEDGER.md` (the validation ledger, every finding one row), `PORTING_NOTES.md` (the decoded specification), `MANUAL_DIGEST.md` (the upstream manuals condensed), `SSMC_REPORT.md` (findings for the maintainers, awaiting the operator's review), `ENVIRONMENT.md` (toolchain). | yes (`PLAN_HISTORY.md` frozen) |
 | `docs/` | New. `build.py` renders the API reference from the in-place docstrings; the output is git-ignored. | yes |
 
@@ -100,7 +103,8 @@ snapshot; the two regimes coexist and neither restricts the other.
 — Millero (2010) and Cenedese & Linden (2014) — are copyrighted works we may hold for
 private research but **not** republish, and they are tracked in git history, not just the
 working tree. Private collaborator access is fine; any public release must first remove them
-(a history rewrite, not a `git rm`) — see `references/README.md`.
+(a history rewrite or a history-free snapshot export, not a `git rm`) — see
+`references/README.md`.
 
 ## Getting started
 

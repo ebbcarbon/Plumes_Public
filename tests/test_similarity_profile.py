@@ -180,7 +180,7 @@ def test_the_profile_round_trips_through_yaml_and_the_default_is_omitted() -> No
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # case01's seabed GeometryWarning and its duplicate CSV
         case = load_project(
-            REFERENCE_CASES / "case01_macoma_cms" / "Macoma2.prj", warn_on_drift=False
+            REFERENCE_CASES / "case01_cms" / "project.prj", warn_on_drift=False
         ).to_case()
     assert "similarity_profile" not in dumps_case(case), "a default is not written"
     gaussian = case.model_copy(

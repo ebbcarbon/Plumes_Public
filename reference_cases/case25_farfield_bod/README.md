@@ -32,7 +32,7 @@ useful — see below — it just answers a different question than intended.
 
 1. ⭐ **A third geometry confirms the path integral.** Run 1's near-field DO follows
    `d(DO·D)/dD = DO_a(z)` on the 18-port, 8 MGD, 11 m-deep geometry that surfaces — against
-   case24's two Macoma geometries. Its residual is 0.038 mg/L, larger than case24's 0.006 because
+   case24's two archived-diffuser geometries. Its residual is 0.038 mg/L, larger than case24's 0.006 because
    this profile has kinks at 3, 6 and 10 m that the plume crosses and a trapezoid over printed rows
    smooths.
 2. ✅ **With a uniform ambient the path integral collapses to the manual's eq 23 exactly**, as

@@ -10,7 +10,7 @@ Windows executable from SSMC -- cannot report the quantity that matters most for
 
     from plumes2 import load_case, run
 
-    case = load_case("case.yaml")                  # or load_project("Macoma2.prj").to_case()
+    case = load_case("case.yaml")                  # or load_project("project.prj").to_case()
     results = run(case)                            # .nearfield, .farfield, both DataFrames
     print(results.nearfield[["time_s", "dilution", "plume_diameter_m"]].tail())
 
@@ -20,8 +20,8 @@ from plain CSV ambient tables (`ambient_from_files`) instead of a YAML file.
 Or from a shell, without writing any Python:
 
     plumes2 run CASE -o out/      tidy CSVs at full precision, with a provenance sidecar
-    plumes2 report CASE           one self-contained HTML page, eleven panels
-    plumes2 validate -o v.html    the validation ledger, executed
+    plumes2 report CASE           one PDF of explained panels (HTML with an .html path)
+    plumes2 validate -o v.pdf     the validation ledger, executed
     plumes2 info CASE             what a case contains, without running it
     plumes2 convert CASE          .prj <-> .yaml
     plumes2 farfield ...          the standalone Brooks calculator
@@ -37,7 +37,7 @@ Or from a shell, without writing any Python:
 | `plumes2.chem` | speciation, saturation states (including brucite), precipitation rates |
 | `plumes2.biochem` | dissolved oxygen and BOD |
 | `plumes2.results` | `run()` -- the thing most callers want |
-| `plumes2.report` | the HTML reports |
+| `plumes2.report` | the reports, PDF or HTML |
 | `plumes2.validation` | the executable ledger: every claim, its reference, its tolerance |
 
 ## Reading this reference

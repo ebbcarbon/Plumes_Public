@@ -90,7 +90,7 @@ blocks of `I11` flags followed by `E12.3` data rows (20 rows/table):
 > near-field names), so a reader must be sequential rather than line-offset based.
 >
 > **Unit flag map, decoded** from the matched `.prj`/`.dat` pair in
-> [case00](../reference_cases/case00_macoma_legacy_fps/): **flag 1 = the primary unit,
+> [case00](../reference_cases/case00_legacy_fps/): **flag 1 = the primary unit,
 > flag 2 = the alternate one** — feet for lengths, m³/s for flow. In that project
 > diffuser spacing (flag 2, stored 2.0) echoes as 0.61 m and both mixing-zone
 > distances (flags 2, stored 20.7 / 207.0) echo as 6.31 / 63.09 m, all exactly
@@ -136,7 +136,7 @@ column on diffuser/effluent/mixing-zone tables:
 - `AmbientChem`: depth, TA, DIC, pH, Ca
 
 > **Chemistry findings (2026-08-12), from
-> [case03](../reference_cases/case03_macoma_carbonate/):**
+> [case03](../reference_cases/case03_carbonate/):**
 > - **Input units are µmol/kg** (TA, DIC, Ca — the GUI dropdown has only this one
 >   option). The **effluent** endmembers are converted to the output's `mmol/m3` using
 >   **effluent density** (factor brackets EOS-80 ρ(35,10)/1000 = 1.026952 to ±0.06 %),
@@ -159,7 +159,7 @@ column on diffuser/effluent/mixing-zone tables:
 >   a 14.8 % overestimate of the calcite rate if so.
 > - **The `.prj` unit flags include feet.** A Dec-2025 run rescaled port spacing and
 >   both mixing-zone distances by 0.3048 while leaving port dimensions metric, in one
->   file. See [case00](../reference_cases/case00_macoma_legacy_fps/).
+>   file. See [case00](../reference_cases/case00_legacy_fps/).
 > - **Output header text varies between exe builds** (`Avg-Dil` vs `Dilutn (FluxAvg)`,
 >   bare vs parenthesised unit rows, `kg/kg` vs `mg/L`, `m3/s` vs `cms`), and an older
 >   build emits a `P-Temp` column. The `.dat` reader must not key on exact strings.
@@ -210,6 +210,10 @@ column on diffuser/effluent/mixing-zone tables:
 >   travels to y = 5.389 m, past the stated 5 m shoreline (case12). No shoreline event
 >   appears in any of our twelve traces, and no saved `.prj` has a non-zero shoreline
 >   vector, so the coordinate convention remains unknown.
+>   ✅ *Both halves settled 2026-09-02 by case53's controlled pair*: box-on and box-off
+>   traces are **byte-identical** against a typed vector (ledger row 284 — inert beyond
+>   argument), and the as-run projects decode the convention as **[distance m,
+>   bearing deg]** — a typed "60°, 5 m" is stored `5.0, 60.0` (row 284b).
 > - A **single-port** run (`Ports = 1`) produces no usable output at all (case09).
 > - The effluent endmember the model transports is **TA ~4109 against an entered
 >   4000** (µmol/kg). ✅ **Explained (Phase 4, 2026-08-12):** a density factor does
@@ -244,7 +248,7 @@ traces, and a test asserts no others appear.
 >   Calculations` and then the note. So the note is an advisory about merging and
 >   the far-field is enabled separately (a `.prj` flag, not yet identified).
 > - Step-table columns are selected by the `.prj` variable-name list, in order
->   (5 columns in the example, 9 in each Macoma case, with different sets).
+>   (5 columns in the example, 9 in each archived-diffuser case, with different sets).
 > - Decoded output relations, all exact:
 >   `CL-Dil = max(1.0, FluxAvg-Dilution / 2)` (0 exceptions in 125 rows across
 >   case01+case02), `P-Con. = C_effluent / dilution`, and
@@ -329,7 +333,7 @@ Baumgartner et al. (1994).
 > ```
 >
 > It fits **every current-build run** exactly — nine of ten, the exception being the
-> *shipped* trace. Every Macoma case discharges
+> *shipped* trace. Every archived-diffuser case discharges
 > parallel to the current, so the offset is zero and the cosine is 1 — which is why the
 > uncorrected form fitted them all and hid this. The ninth run is the *shipped* upstream
 > trace, whose 109.59 m implies 0.9943 x nominal rather than cos(30 deg) = 0.866; a

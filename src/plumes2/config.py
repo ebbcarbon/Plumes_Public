@@ -64,7 +64,10 @@ __all__ = [
 
 Positive = Annotated[float, Field(gt=0)]
 NonNegative = Annotated[float, Field(ge=0)]
-Bearing = Annotated[float, Field(ge=0, le=360)]
+#: A direction in the horizontal plane, degrees counter-clockwise from +x -- the PLUMES manual's
+#: convention ("+ve CCW from x-axis"), fixed by test19 (`nearfield.state.horizontal_unit`).
+#: Not a compass bearing: nothing in the model says which way +x points on the site.
+Direction = Annotated[float, Field(ge=0, le=360)]
 
 
 class GeometryWarning(UserWarning):
@@ -206,7 +209,7 @@ class Diffuser(_Model):
     port_diameter: Positive
     port_elevation: NonNegative
     vertical_angle: Annotated[float, Field(ge=-90, le=90)]
-    horizontal_angle: Bearing
+    horizontal_angle: Direction
     n_ports: Annotated[int, Field(ge=1)]
     port_spacing: NonNegative
     port_depth: Positive
@@ -235,7 +238,7 @@ class Diffuser(_Model):
         **Scope: this is the wastefield-width correction in the current exe build only.**
         It reproduces every current-build width exactly, including two independent
         measurements at a 30 degree offset with different final diameters (case13 with
-        chemistry on, 96.29 m; case14 with it off, 97.60 m). Every Macoma case discharges
+        chemistry on, 96.29 m; case14 with it off, 97.60 m). Every archived-diffuser case discharges
         parallel to the current, so the offset is zero and the correction is invisible --
         which is why the uncorrected form fitted all of them.
 
@@ -294,9 +297,9 @@ class Diffuser(_Model):
         default reproduces the 2026 builds and `ExeBuild.LEGACY` reproduces the pre-2026 one.
         See :class:`ExeBuild` for the measurements either way.
         """
-        return (
-            self.n_ports - 1
-        ) * self.effective_spacing(current_direction, build=build) + final_plume_diameter
+        return (self.n_ports - 1) * self.effective_spacing(
+            current_direction, build=build
+        ) + final_plume_diameter
 
     @model_validator(mode="after")
     def _warn_on_multiport_without_spacing(self) -> Self:
@@ -311,12 +314,24 @@ class Diffuser(_Model):
 
 
 class Effluent(_Model):
-    """Discharge properties. `flow` is total across all ports, in m3/s."""
+    """Discharge properties. `flow` is total across all ports, in m3/s.
+
+    `excess_density` exists for effluents whose dissolved load is not seawater's -- pure water
+    carrying NaOH, say. The equation of state reads salinity alone, so the hydroxide's mass would
+    otherwise be invisible to the buoyancy; giving it as an equivalent salinity instead would
+    hand the *chemistry* a false seawater fraction (Mg, borate, and a strongly salinity-
+    dependent Kw -- tried and abandoned 2026-09-08, when the coupling ran away). So it is a
+    separate, density-only quantity: added to the plume density at the port, diluted with the
+    effluent mass along the trajectory (`excess / D`), and never seen by the carbonate system.
+    """
 
     flow: Positive
     salinity: NonNegative = 0.0
     temperature: float = 20.0
     pollutant: NonNegative = 0.0
+    #: Density the dissolved load adds beyond what `salinity` accounts for, kg/m3 at the port.
+    #: Conservative in the effluent mass, invisible to the chemistry; not stored in a `.prj`.
+    excess_density: NonNegative = 0.0
 
     def exit_velocity(self, diffuser: Diffuser) -> float:
         """Per-port exit velocity.
@@ -345,13 +360,13 @@ class MixingZone(_Model):
 class AmbientLevel(_Model):
     depth: NonNegative
     current_speed: NonNegative = 0.0
-    current_direction: Bearing = 0.0
+    current_direction: Direction = 0.0
     salinity: NonNegative = 0.0
     temperature: float = 20.0
     background_pollutant: NonNegative = 0.0
     decay_rate: NonNegative = 0.0
     farfield_speed: NonNegative = 0.0
-    farfield_direction: Bearing = 0.0
+    farfield_direction: Direction = 0.0
     dispersion_alpha: NonNegative = 3.0e-4
 
 
@@ -412,7 +427,7 @@ class EffluentDO(_Model):
     Not stored in any `.prj` — the Dissolved Oxygen tab is "not saved in the project file"
     (manual §5.2.6), exactly like the carbonate tab. So this exists only in our own case format,
     and a `.dat` from the exe is uninterpretable without the values written down separately. See
-    `reference_cases/case24_macoma_dissolved_oxygen/README.md`, which is what makes that archive
+    `reference_cases/case24_dissolved_oxygen/README.md`, which is what makes that archive
     usable at all.
 
     ⚠️⚠️ **These two are not interchangeable, and the exe treats them in opposite ways.** Every
@@ -522,7 +537,7 @@ class NearFieldSettings(_Model):
     #: Carried for fidelity; the exe never uses it.
     light_absorption: NonNegative = 0.16
     #: "No. of maximum plume rise or fall". 2 in the upstream example, 3 in every
-    #: Macoma case.
+    #: archived-diffuser case.
     max_rise_or_fall: Annotated[int, Field(ge=0, le=3)] = 2
     #: The GUI's "stop plume at surface hit" checkbox — a control in its own right, distinct
     #: from `max_rise_or_fall`. case13 and case14 are the same project run with it on and
@@ -690,7 +705,10 @@ class Case(_Model):
                 _interpolate(depth, depths, [level.temperature for level in self.ambient.levels]),
             )
         )
-        effluent_density = float(density(self.effluent.salinity, self.effluent.temperature))
+        effluent_density = (
+            float(density(self.effluent.salinity, self.effluent.temperature))
+            + self.effluent.excess_density
+        )
         return float(
             densimetric_froude_number(
                 self.effluent.exit_velocity(self.diffuser),

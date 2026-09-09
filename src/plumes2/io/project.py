@@ -15,9 +15,9 @@ cannot come from the project at all -- it has to be supplied separately (via a Y
 case, or by hand). A `.prj` we write can never round-trip chemistry back into the exe.
 
 CSV files are identified by *layout* rather than filename, because the names vary
-freely across the cases we hold (`Ambient_example.csv`, `macoma2ambient.csv`,
+freely across the cases we hold (`Ambient_example.csv`, `ambient.csv`,
 `testambient.csv`). Where two files share a layout -- case01 has both
-`macoma2effluent.csv` and `varios flows.csv` -- the one agreeing with the `.prj` is
+`effluent.csv` and `varios flows.csv` -- the one agreeing with the `.prj` is
 preferred and the ambiguity is reported.
 """
 

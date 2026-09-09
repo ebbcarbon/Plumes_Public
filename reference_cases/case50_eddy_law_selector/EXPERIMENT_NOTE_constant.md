@@ -52,7 +52,7 @@
 
 | observable | port predicts |
 |---|---|
-| near field, every column | bit-identical to case03's interval-1 trace (`case03_macoma_carbonate/kso4_option3.dat`, hydrodynamic columns) -- the law is a far-field input and nothing upstream of the transition reads it |
+| near field, every column | bit-identical to case03's interval-1 trace (`case03_carbonate/kso4_option3.dat`, hydrodynamic columns) -- the law is a far-field input and nothing upstream of the transition reads it |
 | the seven far-field flags in the as-run `.prj` | **one position changes** from the archive's `1,0,0,1,1,1,0`. Position 4 (1-indexed) is the standing guess for the law; whichever position moves, and to what, is the decoding this run exists for |
 | the far-field header's law line | prints something other than `4/3 Power Law` -- record the exact string; the reader (`io/dat.py`) stores it as `eddy_diffusivity_law` and has only ever seen one value |
 | far-field `Dilution` at 100 m | **747.6** under this law (the 4/3 default gives 997.8 on the same near field); the port's Brooks is confirmed to 5e-4 against the exe's own standalone calculator on the 4/3 law (row 119), so a match here also confirms the other law's implementation |
@@ -65,7 +65,7 @@
 
 ## Notes
 
-- Ebb's default profile (case03's Macoma configuration) without chemistry, interval 1.
+- Ebb's default profile (case03's configuration) without chemistry, interval 1.
 - Copy the trace aside as `eddy_law_constant.dat` and the rewritten project as `asrun_eddy_law_constant.prj` before any further run.
 - One run per note, one law per run. The sibling directory asks for the other non-default law on the same project.
 - WHICH EXE BUILD did this run: write down which executable was launched, and from where. Nothing in the .prj or the .dat records it (ledger row 275).

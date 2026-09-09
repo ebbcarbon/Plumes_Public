@@ -17,7 +17,7 @@ merging correction is absent from all six and cannot contaminate the entrainment
 | test26 | 25 | 0.02 m/s | **1.0** | 5e-5 | 512 | contraction at 25 ports |
 
 `Amb-cur` is the near-field current; the far-field speed stays at 0.02 m/s because the exe
-will not accept zero there. All six use the Macoma ambient profile, a 0.0127 m port at
+will not accept zero there. All six use the case03 ambient profile, a 0.0127 m port at
 45° vertical / 90° horizontal, 2.0 m spacing, 2 m port depth, 15 m port elevation, and
 effluent at 35 psu / 10 °C.
 
@@ -46,7 +46,7 @@ Differencing test23 against test24 (identical but for the current) isolates `A_p
 ## ⚠️ Two rounding traps in the `.dat` echo
 
 The **diffuser echo prints two decimals**, so its `P-dia` of `0.01` is really 0.0127 and its
-`Ttl-flo` of `0.01` in (cms) is really 0.005 — both the Macoma baseline. Only the
+`Ttl-flo` of `0.01` in (cms) is really 0.005 — both the archived-diffuser baseline. Only the
 *simulation results* table prints three decimals. Both traps bit during this analysis: the
 flow one produced an apparent factor-of-2 discrepancy in the Taylor coefficient, and the
 diameter one initially hid the contraction relation. **Read inputs from the `.prj`.**

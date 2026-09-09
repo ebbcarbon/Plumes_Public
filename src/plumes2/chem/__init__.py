@@ -50,6 +50,7 @@ from plumes2.chem.saturation import (
 )
 from plumes2.chem.speciation import (
     CarbonateState,
+    alkalinity_for_ph,
     solve_from_alkalinity_dic,
     solve_from_alkalinity_ph,
 )
@@ -72,6 +73,7 @@ __all__ = [
     "RateLaw",
     "UnknownConstantOptionError",
     "ValidityRange",
+    "alkalinity_for_ph",
     "aragonite_laws",
     "calcium_from_salinity",
     "carbonate_ion",

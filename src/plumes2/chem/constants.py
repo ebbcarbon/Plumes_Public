@@ -174,9 +174,7 @@ EXE_K1K2_OPTIONS: dict[int, K1K2Option] = {
         ValidityRange(2, 35, 19, 43),
         "real seawater",
     ),
-    8: K1K2Option(
-        "Millero 1979, pure water only", None, ValidityRange(0, 50, 0, 0), "pure water"
-    ),
+    8: K1K2Option("Millero 1979, pure water only", None, ValidityRange(0, 50, 0, 0), "pure water"),
     9: K1K2Option(
         "Cai & Wang 1998",
         PHScale.NBS,

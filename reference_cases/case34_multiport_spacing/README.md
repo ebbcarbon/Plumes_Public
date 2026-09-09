@@ -1,12 +1,20 @@
 # case34 — the multiport merge trigger fires on the crossing, with no lag at all
 
 Run 2026-08-19 from the `subcritical_sinks` project. **25 ports** at 0.005 m³/s total, **45 psu**
-effluent into the ~31 psu Macoma ambient at a 2.0 m port depth, so the plume is dense and sinks.
+effluent into the ~31 psu case03 ambient at a 2.0 m port depth, so the plume is dense and sinks.
 Port spacing and port diameter are swept independently.
 
 ⚠️ These are not the sub-critical *sinking* run the project was written for — that asked for one
 run at the case29 geometry. They are a spacing sweep on the same base, and they answer a bigger
 question than the one they were pointed at.
+
+⭐⭐ *2026-09-02: one of them **was** that run after all.* `L2.0_d0.50.dat` is the case29-geometry
+arm, and when the sinking experiment was finally generated with registered predictions
+([case54](../case54_subcritical_sinks/README.md)), its trace came back **byte-identical** to this
+file — so the sub-critical separation (a submerged F ≈ 0.0044 run is finite end to end; case29's
+NaN cliff is the missing surface clamp, not the regime) had been sitting here unclaimed for two
+weeks. Ledger row 285 now claims it, sourced to both cases; the collision doubles as the archive's
+fifth same-input determinism check (row 191c).
 
 | run | spacing `L` | port dia | `merging happened` | first step with `d ≥ L` | **lag** | `d/L` at the banner |
 |---|---|---|---|---|---|---|

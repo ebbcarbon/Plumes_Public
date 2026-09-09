@@ -80,9 +80,7 @@ def test_the_note_records_what_generated_it(tmp_path: Path) -> None:
     from plumes2.provenance import case_digest
 
     case = _case()
-    written = write_experiment(
-        Experiment(name="probe", case=case, question="?"), tmp_path
-    )
+    written = write_experiment(Experiment(name="probe", case=case, question="?"), tmp_path)
     note = (written / "README.md").read_text(encoding="utf-8")
     assert "## Provenance" in note
     assert case_digest(case) in note, "the digest must pin the case the .prj came from"
@@ -91,9 +89,7 @@ def test_the_note_records_what_generated_it(tmp_path: Path) -> None:
 
 def _chemistry_case():  # type: ignore[no-untyped-def]
     """case03's project, which carries a four-level ambient chemistry table."""
-    return load_project(
-        CASES / "case03_macoma_carbonate" / "test.prj", warn_on_drift=False
-    ).to_case()
+    return load_project(CASES / "case03_carbonate" / "test.prj", warn_on_drift=False).to_case()
 
 
 def test_a_chemistry_experiment_gets_its_ambient_table(tmp_path: Path) -> None:
@@ -126,7 +122,7 @@ def test_a_chemistry_experiment_gets_its_ambient_table(tmp_path: Path) -> None:
     generated = written / "AmbientChem_probe.csv"
     assert generated.exists(), "a case with ambient chemistry must get its CSV written"
 
-    reference = (CASES / "case03_macoma_carbonate" / "testco2.csv").read_bytes()
+    reference = (CASES / "case03_carbonate" / "testco2.csv").read_bytes()
     generated_lines = generated.read_bytes().split(b"\r\n")
     reference_lines = reference.split(b"\r\n")
     assert len(generated_lines) == len(reference_lines)
@@ -187,9 +183,7 @@ def test_a_row_that_already_carries_a_ph_is_left_alone() -> None:
 
 def test_a_case_without_chemistry_gets_no_stray_csv(tmp_path: Path) -> None:
     """The side-tables are written only when the case has them, or every run gains empty files."""
-    written = write_experiment(
-        Experiment(name="probe", case=_case(), question="?"), tmp_path
-    )
+    written = write_experiment(Experiment(name="probe", case=_case(), question="?"), tmp_path)
     assert not list(written.glob("AmbientChem_*.csv"))
     assert not list(written.glob("AmbientDO_*.csv"))
     assert (written / "probe.prj").exists()
@@ -210,9 +204,7 @@ def test_a_generated_experiment_asks_for_every_column(tmp_path: Path) -> None:
     """
     from plumes2.io.prj import read_prj
 
-    written = write_experiment(
-        Experiment(name="probe", case=_case(), question="?"), tmp_path
-    )
+    written = write_experiment(Experiment(name="probe", case=_case(), question="?"), tmp_path)
     project = read_prj(written / "probe.prj")
     assert len(project.nearfield_plot_variables) == 13
     assert len(project.farfield_plot_variables) == 6
@@ -224,9 +216,7 @@ def test_the_generated_project_still_round_trips(tmp_path: Path) -> None:
     """Widening the column list must not break the byte format the exe parses."""
     from plumes2.io.prj import read_prj, write_prj
 
-    written = write_experiment(
-        Experiment(name="probe", case=_case(), question="?"), tmp_path
-    )
+    written = write_experiment(Experiment(name="probe", case=_case(), question="?"), tmp_path)
     original = (written / "probe.prj").read_bytes()
     again = tmp_path / "again.prj"
     write_prj(read_prj(written / "probe.prj"), again)
@@ -249,14 +239,14 @@ def _archived_dat(relative: str):  # type: ignore[no-untyped-def]
 def test_a_distance_stop_is_claimed_even_when_a_dilution_level_was_crossed() -> None:
     """⚠️ The trap the census's first draft fell into, kept as a test.
 
-    case02's Macomatest1 crosses 5000x dilution at 500.0 m exactly and stops at 501.611 m -- the
+    case02's test1 crosses 5000x dilution at 500.0 m exactly and stops at 501.611 m -- the
     *distance* bound it, and the dilution number is a coincidence. 33 archived traces cross 5000x
     and run on to 500 m regardless (their session's stop was 10000x), so a naive threshold check
     misfiles every one of them.
     """
     from plumes2.experiments import classify_farfield_stop
 
-    stop = classify_farfield_stop(_archived_dat("case02_macoma_mgd/Macomatest1.dat"))
+    stop = classify_farfield_stop(_archived_dat("case02_mgd/test1.dat"))
     assert stop is not None
     assert stop.kind == "distance"
     assert stop.stop == 500.0
@@ -272,9 +262,7 @@ def test_a_dilution_stop_is_claimed_despite_the_exe_stopping_rows_late() -> None
     assert stop.kind == "dilution"
     assert stop.stop == 10_000.0
 
-    stop = classify_farfield_stop(
-        _archived_dat("case03_macoma_carbonate/kso4_option3.dat")
-    )
+    stop = classify_farfield_stop(_archived_dat("case03_carbonate/kso4_option3.dat"))
     assert stop is not None
     assert stop.kind == "dilution"
     assert stop.stop == 5_000.0
@@ -287,9 +275,7 @@ def test_the_chronic_default_is_read_from_the_trace_alone() -> None:
     """
     from plumes2.experiments import classify_farfield_stop
 
-    stop = classify_farfield_stop(
-        _archived_dat("case13_generated_example/PythonGenerated2.dat")
-    )
+    stop = classify_farfield_stop(_archived_dat("case13_generated_example/PythonGenerated2.dat"))
     assert stop is not None
     assert stop.kind == "chronic_default"
     assert stop.stop == 102.0
@@ -332,9 +318,7 @@ def test_the_note_instructs_both_farfield_stops(tmp_path: Path) -> None:
     case -- before 2026-08-24 it mentioned neither, which is how the operator habit went
     unrecorded for six weeks.
     """
-    written = write_experiment(
-        Experiment(name="probe", case=_case(), question="?"), tmp_path
-    )
+    written = write_experiment(Experiment(name="probe", case=_case(), question="?"), tmp_path)
     note = (written / "README.md").read_text(encoding="utf-8")
     assert "far-field stop" in note
     assert "far-field eddy diffusivity: **4/3 power law based eddy diffusivity**" in note

@@ -112,8 +112,12 @@ class Provenance:
         """
         rows = [
             ("plumes2", self.port_version),
-            ("commit", f"{self.git_commit}{' (dirty)' if self.git_dirty else ''}"
-             if self.git_commit else "unknown"),
+            (
+                "commit",
+                f"{self.git_commit}{' (dirty)' if self.git_dirty else ''}"
+                if self.git_commit
+                else "unknown",
+            ),
             ("generated", self.generated_at),
             ("case", self.case_digest),
             ("python", self.python_version),

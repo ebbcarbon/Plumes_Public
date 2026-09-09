@@ -5,7 +5,7 @@ other half of row 191**: the check is *not* gated on trapping. case22/23 only lo
 because in both of those runs the two coincided.
 
 **Old build**, output interval 1, single port at 0.005 m³/s discharged **downward at −45°**,
-effluent into the Macoma profile at 0.02 m/s. Everything is case23's `limspc_gap` except the
+effluent into the case03 ambient profile at 0.02 m/s. Everything is case23's `limspc_gap` except the
 fields marked below.
 
 | run | port diameter | port depth | effluent | rows | first trap | `merging happened` |

@@ -4,7 +4,7 @@
 impossible. Generated 2026-08-12 to determine the forced-entrainment closure, which is the
 last genuinely undocumented piece of the near field.
 
-Base is test24: 1 port, 0.0127 m diameter, 5e-5 m³/s (the Macoma 0.005 ÷ 100), 45° vertical
+Base is test24: 1 port, 0.0127 m diameter, 5e-5 m³/s (the archived 0.005 ÷ 100), 45° vertical
 / 90° horizontal, 2 m port depth, 15 m elevation, effluent 35 psu / 10 °C, contraction 0.61,
 aspiration 0.1, rise/fall 3. Only the **near-field ambient current** changes; the far-field
 speed stays at 0.02 m/s because the exe will not accept zero there.

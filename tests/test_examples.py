@@ -61,14 +61,17 @@ def test_run_macoma_reproduces_the_dose_study_row() -> None:
     YAML carries case03's tracer; the example omits it) and pollutant does not feed chemistry
     or dynamics, so it is excluded from the comparison.
     """
+    study_yaml = EXAMPLES.parent / "studies" / "ebb_dose_study" / "ebb_macoma_default.yaml"
+    if not study_yaml.exists():
+        pytest.skip(
+            "the dose study is not in this checkout (it is withheld from the public export)"
+        )
     macoma = runpy.run_path(str(EXAMPLES / "run_macoma.py"), run_name="__main__")
 
     from plumes2 import load_case
     from plumes2.sweep import with_updated
 
-    study = load_case(
-        EXAMPLES.parent / "studies" / "ebb_dose_study" / "ebb_macoma_default.yaml"
-    )
+    study = load_case(study_yaml)
     study = with_updated(study, "effluent_chemistry.total_alkalinity", 6000.0)
     example = macoma["build_case"]()
     for section in ("diffuser", "mixing_zone", "ambient", "effluent_chemistry"):

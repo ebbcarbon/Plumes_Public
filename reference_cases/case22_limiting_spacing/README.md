@@ -8,7 +8,7 @@ hand-edited, and the first with predictions registered **before** the run.
 
 Both runs are one port at 0.20 m, 0.005 m³/s, discharged **downward at −45°** so the plume
 sinks away from the surface and can grow wide while staying submerged. Effluent 35 psu /
-10 °C into the Macoma profile, 0.02 m/s current. **Only the port depth differs.**
+10 °C into the case03 ambient profile, 0.02 m/s current. **Only the port depth differs.**
 
 | run | port depth | `2 × port depth` | merging banner | max diameter |
 |---|---|---|---|---|

@@ -64,30 +64,47 @@ def test_run_defaults_the_output_directory_beside_the_case(cheap_case_file, tmp_
 
 
 @pytest.mark.slow
-def test_report_writes_one_html_file(cheap_case_file, tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+def test_report_writes_a_pdf_by_default(cheap_case_file, tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    """No `-o`: a `.report.pdf` beside the case, and the console says it is a PDF."""
+    copied = tmp_path / "mycase.yaml"
+    copied.write_text(cheap_case_file.read_text(encoding="utf-8"), encoding="utf-8")
+    assert main(["report", str(copied), "--samples", "20"]) == 0
+    out = tmp_path / "mycase.report.pdf"
+    assert out.read_bytes().startswith(b"%PDF-1.")
+    assert {p.name for p in tmp_path.iterdir()} == {copied.name, out.name}, "no sidecars"
+    printed = capsys.readouterr().out
+    assert "wrote" in printed and "PDF" in printed
+
+
+@pytest.mark.slow
+def test_report_writes_one_html_file_when_asked(cheap_case_file, tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    """An `.html` suffix still writes the self-contained page."""
     out = tmp_path / "report.html"
     assert main(["report", str(cheap_case_file), "-o", str(out), "--samples", "20"]) == 0
     assert [out.name] == [p.name for p in tmp_path.iterdir()], "self-contained: no sidecars"
     html = out.read_text(encoding="utf-8")
     assert html.startswith("<!doctype html>") and "<svg" in html
-    assert "wrote" in capsys.readouterr().out
+    assert "browser" in capsys.readouterr().out
 
 
 @pytest.mark.golden
 def test_report_accepts_an_exe_dat_directly(tmp_path: Path) -> None:
     """The GUI's own output is a first-class input, which is what makes the archive reportable."""
-    trace = CASES / "case03_macoma_carbonate" / "test2_TxtOutputs.dat"
+    trace = CASES / "case03_carbonate" / "test2_TxtOutputs.dat"
     out = tmp_path / "trace.html"
-    assert main(
-        [
-            "report",
-            str(trace),
-            "-o",
-            str(out),
-            "--case-file",
-            str(CASES / "case03_macoma_carbonate" / "test.prj"),
-        ]
-    ) == 0
+    assert (
+        main(
+            [
+                "report",
+                str(trace),
+                "-o",
+                str(out),
+                "--case-file",
+                str(CASES / "case03_carbonate" / "test.prj"),
+            ]
+        )
+        == 0
+    )
     html = out.read_text(encoding="utf-8")
     assert "carries no provenance" in html, "a .dat has none, and the report must say so"
     assert "brucite" in html, "and it still reaches the quantity the exe cannot report"
@@ -135,13 +152,19 @@ def test_converting_to_a_prj_warns_about_what_it_drops(tmp_path: Path, capsys) -
 
 
 def test_farfield_runs_standalone(capsys) -> None:  # type: ignore[no-untyped-def]
-    code = main([
-        "farfield",
-        "--dilution", "170",
-        "--width", "110",
-        "--distance", "200",
-        "--current", "0.02",
-    ])
+    code = main(
+        [
+            "farfield",
+            "--dilution",
+            "170",
+            "--width",
+            "110",
+            "--distance",
+            "200",
+            "--current",
+            "0.02",
+        ]
+    )
     assert code == 0
     printed = capsys.readouterr().out
     assert "dilution" in printed and "width" in printed

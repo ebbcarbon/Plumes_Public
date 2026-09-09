@@ -54,39 +54,45 @@ silently drift from the code.
 ## `run_macoma.py` — the real site: Ebb's default (Macoma) profile
 
 The same pattern at the configuration the project was built for: case03's diffuser and
-effluent ([`reference_cases/case03_macoma_carbonate/`](../reference_cases/case03_macoma_carbonate/README.md)),
-the measured ambient in [`macoma_ambient_levels.csv`](macoma_ambient_levels.csv) and
+flow ([`reference_cases/case03_carbonate/`](../reference_cases/case03_carbonate/README.md))
+with the effluent as intake water (S 30.9 / T 11.2 — operator, 2026-09-08),
+the measured hydrography in [`macoma_ambient_levels.csv`](macoma_ambient_levels.csv), the site's
+carbonate chemistry — TA 2146 / DIC 2092 µmol/kg, uniform in depth (operator, 2026-09-09) — in
 [`macoma_ambient_chemistry.csv`](macoma_ambient_chemistry.csv), and the alkalinity dose
 (`DOSE_TA`, default 6000 µmol/kg at the intake DIC) as the knob. This is the geometry the
 Phase 9 dose study ran at, and the script's numbers reproduce the study's TA 6000 row
-([`studies/ebb_dose_study/`](../studies/ebb_dose_study/README.md)): port pH 10.671, Ω 385,
-crossing at dilution 2.16 / 0.47 s / 1.8 cm, boundary dilutions 633 / 4319.
+([`studies/ebb_dose_study/`](../studies/ebb_dose_study/README.md)): port pH 10.990, Ω 1546,
+crossing at dilution 2.54 / 0.16 s / 3.5 cm, boundary dilutions 159 / 360. (The example runs
+the acute 2 cm/s ambient only; the study reads its chronic boundary on the 5 cm/s ambient, 306.)
 
 ```text
 $ .venv/Scripts/python examples/run_macoma.py
 warning: the seabed is at 17 m (port depth 2 + elevation 15) but the ambient profile stops at 15 m, [...]
 
-port: pH 10.671 (total), omega_brucite 385.4 (an upper bound)
-termination: oscillation limit; near-field end dilution 534 at 139 s
-flux-averaged omega_brucite falls back through 1 at dilution 2.16, 0.47 s, 1.8 cm from the port (nearfield); the parabolic centreline crossing sits at twice that dilution
+port: pH 10.990 (total), omega_brucite 1546.4 (an upper bound)
+termination: oscillation limit; near-field end dilution 158 at 142 s
+flux-averaged omega_brucite falls back through 1 at dilution 2.54, 0.16 s, 3.5 cm from the port (nearfield); the parabolic centreline crossing sits at twice that dilution
 
 mixing-zone boundaries:
-           region     dilution  ph_total omega_brucite omega_aragonite
-acute    farfield   633.341845  8.389211      0.008777        4.702409
-chronic  farfield  4319.472201  8.384259      0.008564        4.653772
+           region    dilution  ph_total omega_brucite omega_aragonite
+acute    farfield  159.254614   7.80866      0.000623        1.129754
+chronic  farfield  359.788012  7.764697      0.000508          1.0225
 ```
 
-⚠️ The port spacing here is **0.6096 m — 2 ft**, the 2026-09-01 correction: the archived case03
-project carries 2 m ("2.0" entered with the wrong unit; the Dec-2025 original stored 2.0 under
-the `.prj` feet flag). At Ebb's flow the plume never grows to 0.61 m, so merging never fires and
-the **near field is identical either way** — spacing is inert until merging. What the correction
-moves is the far field (a 14.6 m wastefield instead of 48 m) and therefore the boundary rows
-above.
+⚠️ Two unit corrections are applied here, both the same feet-as-metres slip in the archived
+case03 project, which stores all three values in metres. **The port spacing is 0.6096 m — 2 ft**
+(2026-09-01): at the site's 5900 L/h (98.3 L/min — a third correction, 2026-09-08; the archive
+ran 0.219 L/s) the jets grow to 0.84 m and **merge** in shallow overlap (end `d/L` 1.38, the ~1 %
+regime), so the spacing now touches the near field as well as the far field (a 15.5 m wastefield
+instead of 48 m). **The mixing zones are 6.31 m / 63.09 m — 20.7 ft / 207 ft** (2026-09-02), which
+is where the boundary rows above are read; the acute boundary sits just past the near-field end,
+so its dilution (159) is barely above the endpoint's 158.
 
-Two inherited caveats, both deliberate and both flagged by the script itself: the ambient
-chemistry below the deepest measured row (4 m) is **held constant** to the 17 m seabed — a
-placeholder by design; replace those CSV rows when a measured profile exists — and the
-`GeometryWarning` above is intentional, not a data error: nothing is measured at the 17 m
+Two things to know, both deliberate: the ambient carbonate chemistry is **uniform in depth** —
+TA 2146 / DIC 2092 µmol/kg from the surface to the 17 m seabed (operator, 2026-09-09; Ebb has no
+depth-resolved measurement at Macoma, and the archived case's table was the exe run's entry, not the
+site's), which puts the receiving water at pH 7.72–7.74 (total) and Ω_aragonite ≈ 0.93–0.95 — and
+the `GeometryWarning` above is intentional, not a data error: nothing is measured at the 17 m
 seabed itself, and the profiles are notional because the depth changes with the tides
 (operator, 2026-09-01). The warning states an extrapolation.
 

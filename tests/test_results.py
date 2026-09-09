@@ -46,9 +46,9 @@ def dosed():  # type: ignore[no-untyped-def]
 
 
 @pytest.fixture(scope="module")
-def macoma():  # type: ignore[no-untyped-def]
-    """One 25-port Macoma run, which is the module's far-field case."""
-    return run(_macoma(), samples=60)
+def archive_run():  # type: ignore[no-untyped-def]
+    """One 25-port archived-diffuser run, which is the module's far-field case."""
+    return run(_archive_case(), samples=60)
 
 
 def test_the_trajectory_is_sampled_evenly_and_stops_at_the_benchmark(result) -> None:  # type: ignore[no-untyped-def]
@@ -205,9 +205,7 @@ def _dosed_case():  # type: ignore[no-untyped-def]
     """
     from plumes2.config import EffluentChemistry
 
-    case = load_project(
-        CASES / "case03_macoma_carbonate" / "test.prj", warn_on_drift=False
-    ).to_case()
+    case = load_project(CASES / "case03_carbonate" / "test.prj", warn_on_drift=False).to_case()
     assert case.effluent_chemistry is None, "the .prj cannot carry it"
     assert case.ambient.has_chemistry
     return case.model_copy(
@@ -271,8 +269,8 @@ def test_a_chemistry_run_writes_and_reloads(dosed, tmp_path: Path) -> None:  # t
 # ------------------------------------------------------------------- the far field
 
 
-def _macoma():  # type: ignore[no-untyped-def]
-    return load_project(CASES / "case01_macoma_cms" / "Macoma2.prj", warn_on_drift=False).to_case()
+def _archive_case():  # type: ignore[no-untyped-def]
+    return load_project(CASES / "case01_cms" / "project.prj", warn_on_drift=False).to_case()
 
 
 def test_the_wastefield_width_handoff_matches_the_exe() -> None:
@@ -282,17 +280,17 @@ def test_the_wastefield_width_handoff_matches_the_exe() -> None:
     of 0.558 m. `(n-1) * effective spacing + diameter` = 24 * 2.0 + 0.558 = 48.558, which is
     48.56 to the two decimals it prints.
     """
-    assert _macoma().wastefield_width(0.558) == pytest.approx(48.558, abs=5e-4)
+    assert _archive_case().wastefield_width(0.558) == pytest.approx(48.558, abs=5e-4)
 
 
-def test_the_far_field_starts_where_the_near_field_stopped(macoma) -> None:  # type: ignore[no-untyped-def]
+def test_the_far_field_starts_where_the_near_field_stopped(archive_run) -> None:  # type: ignore[no-untyped-def]
     """Brooks measures `x` from the transition, so its factor is 1 on the first row.
 
     The reported distance is from the *diffuser*, which is what a mixing-zone limit is quoted
     against -- and is how the exe prints it, opening case02's table at 2.896 m with a factor
     of 1.
     """
-    result = macoma
+    result = archive_run
     assert result.farfield is not None
     first = result.farfield.iloc[0]
     assert first["dilution_factor"] == pytest.approx(1.0, abs=1e-6)
@@ -301,8 +299,8 @@ def test_the_far_field_starts_where_the_near_field_stopped(macoma) -> None:  # t
     assert first["distance_m"] > 0.0, "measured from the diffuser, not the transition"
 
 
-def test_the_far_field_spreads_and_dilutes_monotonically(macoma) -> None:  # type: ignore[no-untyped-def]
-    result = macoma
+def test_the_far_field_spreads_and_dilutes_monotonically(archive_run) -> None:  # type: ignore[no-untyped-def]
+    result = archive_run
     frame = result.farfield
     assert frame is not None
     assert frame["width_m"].is_monotonic_increasing
@@ -314,7 +312,7 @@ def test_the_far_field_spreads_and_dilutes_monotonically(macoma) -> None:  # typ
 @pytest.mark.slow
 def test_the_far_field_uses_its_own_current_not_the_near_field_one() -> None:
     """`Far-spd` is a separate ambient column, and using the wrong one rescales every row."""
-    case = _macoma()
+    case = _archive_case()
     levels = [level.model_copy(update={"farfield_speed": 0.10}) for level in case.ambient.levels]
     faster = case.model_copy(update={"ambient": case.ambient.model_copy(update={"levels": levels})})
 
@@ -329,12 +327,15 @@ def test_the_far_field_uses_its_own_current_not_the_near_field_one() -> None:
 @pytest.mark.slow
 def test_no_far_field_without_a_current_or_when_disabled() -> None:
     """Brooks divides by the current; with none there is no downstream axis at all."""
-    case = _macoma()
+    case = _archive_case()
     still = [level.model_copy(update={"farfield_speed": 0.0}) for level in case.ambient.levels]
-    assert run(
-        case.model_copy(update={"ambient": case.ambient.model_copy(update={"levels": still})}),
-        samples=20,
-    ).farfield is None
+    assert (
+        run(
+            case.model_copy(update={"ambient": case.ambient.model_copy(update={"levels": still})}),
+            samples=20,
+        ).farfield
+        is None
+    )
 
     disabled = case.model_copy(
         update={"far_field": case.far_field.model_copy(update={"enabled": False})}
@@ -342,10 +343,10 @@ def test_no_far_field_without_a_current_or_when_disabled() -> None:
     assert run(disabled, samples=20).farfield is None
 
 
-def test_the_far_field_is_written_and_declared(macoma, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+def test_the_far_field_is_written_and_declared(archive_run, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     from plumes2.results import FARFIELD_COLUMNS
 
-    result = macoma
+    result = archive_run
     target = write_results(result, tmp_path / "out")
     assert (target / "farfield.csv").exists()
 
@@ -387,9 +388,7 @@ def test_the_carbonate_system_is_internally_consistent(dosed) -> None:  # type: 
     frame = dosed.nearfield
     # CO2(aq) is not written, so DIC must exceed CO3 + HCO3 by exactly that much -- small at
     # these pH values, and never negative.
-    residual = (
-        frame["dic_umol_kg"] - frame["carbonate_umol_kg"] - frame["bicarbonate_umol_kg"]
-    )
+    residual = frame["dic_umol_kg"] - frame["carbonate_umol_kg"] - frame["bicarbonate_umol_kg"]
     assert (residual >= -1e-6).all(), "CO3 + HCO3 cannot exceed DIC"
     assert (residual < 100.0).all(), "aqueous CO2 should be small at these pH values"
 

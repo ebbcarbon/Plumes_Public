@@ -59,6 +59,7 @@ from plumes2.config import PHScale
 __all__ = [
     "PH_SCALE_TO_PYCO2SYS",
     "CarbonateState",
+    "alkalinity_for_ph",
     "solve_from_alkalinity_dic",
     "solve_from_alkalinity_ph",
 ]
@@ -286,3 +287,48 @@ def solve_from_alkalinity_ph(
         ph_scale,
         context=context,
     )
+
+
+def alkalinity_for_ph(
+    dic: ArrayLike,
+    ph: ArrayLike,
+    salinity: ArrayLike,
+    temperature: ArrayLike,
+    *,
+    ph_scale: PHScale = PHScale.TOTAL,
+    pressure: ArrayLike = 0.0,
+    constants: ConstantSet | None = None,
+) -> NDArray[np.float64]:
+    """The total alkalinity, umol/kg, at which water of this DIC sits at `ph`.
+
+    The design direction the two `solve_from_*` entry points do not offer: an operator names an
+    effluent by what it is made of and the pH it is dosed to -- "ambient seawater to pH 9.8",
+    "pure water plus NaOH to pH 12" -- and the model wants the conservative `(TA, DIC)` pair.
+    DIC is the water's own (the intake's for seawater, zero for pure water) and the base only
+    adds alkalinity, so TA is the one unknown; PyCO2SYS solves it from the (DIC, pH) pair.
+
+    ⚠️ `(TA, pH)` is *not* a usable statement of the answer when DIC is zero: TA is then all
+    hydroxide (plus borate at S > 0), DIC is recovered as the difference of two nearly equal
+    numbers, and a TA stated a few umol/kg low -- a YAML's rounding -- comes back as NaN. State
+    such an effluent as `(TA, DIC 0)` -- `EffluentChemistry(total_alkalinity=..., dic=0.0)`.
+
+    `ph_scale` defaults to **total**, the scale the results columns and `PH_PARITY_WINDOW` are
+    on; a bench electrode reads NBS, about 0.1 higher in seawater, and the caller converts.
+    """
+    import PyCO2SYS as pyco2
+
+    resolved = constants or resolve_constants()
+    result = pyco2.sys(
+        par1=dic,
+        par2=ph,
+        par1_type=2,
+        par2_type=3,
+        salinity=salinity,
+        temperature=temperature,
+        pressure=pressure,
+        opt_pH_scale=PH_SCALE_TO_PYCO2SYS[ph_scale],
+        opt_k_carbonic=resolved.pyco2sys_k_carbonic,
+        opt_k_bisulfate=resolved.pyco2sys_k_bisulfate,
+        opt_total_borate=resolved.pyco2sys_total_borate,
+    )
+    return np.asarray(result["alkalinity"], dtype=np.float64)

@@ -73,12 +73,14 @@ NEARFIELD_COLUMNS: dict[str, str] = {
     "merged": "whether neighbouring plumes overlap here",
     "plume_diameter_m": "2b, the merged vertical extent where merging applies",
     "depth_m": "below the surface, positive down",
-    "x_m": "east of the port",
-    "y_m": "north of the port",
+    # The model's own frame, not a compass: the case's directions are angles counter-clockwise
+    # from +x (the manual's convention), and nothing says which way +x points on the site.
+    "x_m": "along the model's x axis from the port (the frame the angles are measured in)",
+    "y_m": "along the model's y axis from the port",
     "speed_m_s": "plume element speed",
     "salinity_psu": "plume, practical salinity",
     "temperature_degC": "plume",
-    "density_kg_m3": "plume, EOS-80 at zero pressure",
+    "density_kg_m3": "plume, under near_field.equation_of_state, plus the excess_density tracer",
 }
 
 #: Appended when the case carries carbonate chemistry. TA and DIC mix conservatively and are
@@ -390,6 +392,7 @@ def _farfield_chemistry(case: Case, final, frame: pd.DataFrame) -> pd.DataFrame 
     ambient_dic = float(view.dic(depth))
 
     spreading = frame["dilution_factor"].to_numpy(dtype=np.float64)
+
     def mixed(endpoint: float, background: float) -> np.ndarray:
         return background + (endpoint - background) / spreading
 

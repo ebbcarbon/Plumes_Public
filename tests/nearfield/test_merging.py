@@ -107,9 +107,9 @@ def test_the_merged_radius_conserves_the_cross_sectional_area() -> None:
         assert rounded_rectangle == pytest.approx(math.pi * unmerged * unmerged, rel=1e-9)
 
         stale = overlap_angle(unmerged, 0.5, faithful=False)
-        assert merged * merged * (
-            math.pi - 2.0 * stale + math.sin(2.0 * stale)
-        ) != pytest.approx(math.pi * unmerged * unmerged, rel=1e-3)
+        assert merged * merged * (math.pi - 2.0 * stale + math.sin(2.0 * stale)) != pytest.approx(
+            math.pi * unmerged * unmerged, rel=1e-3
+        )
 
 
 def test_the_effective_spacing_foreshortens_with_the_plume_direction() -> None:
@@ -229,11 +229,7 @@ def test_the_limiting_spacing_trigger_is_the_port_depth() -> None:
         frame = parsed.nearfield
 
         def steps(prefix: str, parsed=parsed) -> list[int]:
-            return [
-                e.next_step
-                for e in parsed.events
-                if e.text.strip().lower().startswith(prefix)
-            ]
+            return [e.next_step for e in parsed.events if e.text.strip().lower().startswith(prefix)]
 
         traps, banners = steps("plume traps"), steps("merging")
         assert len(banners) <= 1
@@ -292,7 +288,10 @@ def test_the_default_takes_every_decrement_at_the_round_radius() -> None:
     for radius in (0.55, 0.7, 1.0, 2.0, 8.0):
         plain = merging_factors(radius, 0.5, 25)
         explicit = merging_factors(
-            radius, 0.5, 25, confined_radius=merged_radius(radius, 0.5),
+            radius,
+            0.5,
+            25,
+            confined_radius=merged_radius(radius, 0.5),
             confined=ConfinedDecrements.NONE,
         )
         assert plain == explicit, radius
@@ -326,8 +325,12 @@ def test_the_confined_brake_saturates_the_growth_area() -> None:
             confined = merged_radius(round_radius, half_spacing)
             at_round = merging_factors(round_radius, half_spacing, 25, faithful=faithful)
             at_confined = merging_factors(
-                round_radius, half_spacing, 25, faithful=faithful,
-                confined_radius=confined, confined=ConfinedDecrements.ALL,
+                round_radius,
+                half_spacing,
+                25,
+                faithful=faithful,
+                confined_radius=confined,
+                confined=ConfinedDecrements.ALL,
             )
             braked.append(at_confined.taylor * math.pi * confined)
             unbraked.append(at_round.taylor * math.pi * confined)
@@ -365,12 +368,20 @@ def test_the_saturation_constant_is_a_width_only_in_the_true_geometry() -> None:
         deep = 100.0 * half_spacing
         confined = merged_radius(deep, half_spacing)
         true_angle = merging_factors(
-            deep, half_spacing, 25, faithful=False,
-            confined_radius=confined, confined=ConfinedDecrements.ALL,
+            deep,
+            half_spacing,
+            25,
+            faithful=False,
+            confined_radius=confined,
+            confined=ConfinedDecrements.ALL,
         )
         exe_angle = merging_factors(
-            deep, half_spacing, 25, faithful=True,
-            confined_radius=confined, confined=ConfinedDecrements.ALL,
+            deep,
+            half_spacing,
+            25,
+            faithful=True,
+            confined_radius=confined,
+            confined=ConfinedDecrements.ALL,
         )
         assert true_angle.taylor * math.pi * confined == pytest.approx(
             2.0 * half_spacing, abs=1e-3

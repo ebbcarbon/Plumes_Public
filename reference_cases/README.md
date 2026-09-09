@@ -1,12 +1,19 @@
 # Reference cases
 
-Exe-generated runs used as validation targets, one numbered folder per case (case00–case50), each
+Exe-generated runs used as validation targets, one numbered folder per case (case00–case55), each
 with a README of what was changed and what the output revealed. Since 2026-08-13 most new cases
 start as a **generated experiment** in [`pending/`](pending/README.md): `plumes2.experiments` writes
 the `.prj` beside a note carrying the GUI-only settings and the predictions registered *before* the
 run; the operator runs it, copies the returning `.dat` and the rewritten (as-run) `.prj` aside, and
 the folder graduates here. The exe overwrites the same filenames on every run, so the copy-aside
 step is the one that matters.
+
+**Naming (2026-09-09).** No folder or file under `reference_cases/` carries the word *Macoma* any more: the
+exe runs in case00–case12 and case24 were an earlier entry of Ebb's diffuser with known slips (2 m for 2 ft
+ports, a 35 psu / 10 °C effluent, 0.219 L/s, mixing zones typed in metres, a chemistry table that was not
+the site's), and the name read as the site. They are "the archived diffuser" here; each README records
+its former folder and file names. The site's actual values are the standalone case
+[`case55_macoma_site`](case55_macoma_site/), run in the exe the same day (row 286).
 
 ## The one thing that does need care
 
@@ -40,19 +47,19 @@ them is not evidence of anything.
 | Case | Regime | Flow | Ports | Steps | Far-field | Chem | Notes |
 |---|---|---|---|---|---|---|---|
 | [`Example_project/`](../upstream/Example_project/) | positively buoyant, freshwater | 8.00 MGD | 18 × 6.10 m | 275 | ✅ runs, merged | — | upstream golden case; surfaces |
-| [case01_macoma_cms](case01_macoma_cms/) | **negatively buoyant** | 0.005 **cms** | 25 × 2.00 m | 420 | ❌ **skipped** | — | oscillates; unmerged |
-| [case02_macoma_mgd](case02_macoma_mgd/) | negatively buoyant, weak momentum | 0.005 **MGD** | 25 × 2.00 m | 410 | ✅ runs while unmerged, to 501.6 m | — | `.prj` saved empty; settings recovered from case03 |
-| [case03_macoma_carbonate](case03_macoma_carbonate/) | same as case02, **bit-identical** | 0.005 MGD | 25 × 2.00 m | 410 | ✅ runs, to 212.4 m | ✅ **TA/DIC/pH/Ω/rates** | **the key case** — effluent TA ≈ 4115, near-port pH 10.00 |
-| [case04_macoma_ta_dic](case04_macoma_ta_dic/) | same as case03, **bit-identical** | 0.005 MGD | 25 × 2.00 m | 410 | ✅ | ✅ TA+DIC entered | diagnostic: pH ignored; unit bug + precip formula decoded |
-| [case05_macoma_merging](case05_macoma_merging/) | negatively buoyant, **plumes MERGE** | 0.005 cms | 25 × **0.60 m** | 417 | ✅ merged, to 507.2 m | ✅ | **`merging happened`** — merges at dia = spacing at 90°; interval 5 |
-| [case06_macoma_arag_s36](case06_macoma_arag_s36/) | **positively buoyant, surfaces** | 0.005 cms | 25 × 0.60 m | 356 | ✅ merged, to 504.7 m | ✅ **R_arg nonzero** | ambient S=36; aragonite band + inert `Ca` both confirmed |
-| [case07_macoma_s45_dense](case07_macoma_s45_dense/) | **strongly dense**, 45 psu effluent | 0.005 cms | 25 × 0.60 m | 529 | ✅ merged, to 210.3 m | ✅ | **S=35 aragonite cutoff crossed mid-trace**; no bottom hit (traps at 3.2 m) |
-| [case08_macoma_shoreline](case08_macoma_shoreline/) | = case05 | 0.005 cms | 25 × 0.60 m | 417 | ✅ to 209.5 m | ✅ | shoreline vector 45° — **no effect at all**; two runs byte-identical |
-| [case09_macoma_single_port](case09_macoma_single_port/) | **exe fails** | 0.005 cms | **1 port** | 5001 | all NaN | all NaN | 955 NaN rows; `(Ω−1)^N` NaN for Ω<1; plume rises above the surface |
-| [case10_macoma_bottom_hit](case10_macoma_bottom_hit/) | dense, **hits the seabed** | 0.005 cms | 25 × 0.60 m | 345 | ✅ to 208.5 m | ✅ | **`Plume hits the bottom`** — elevation 1 m; boundary criterion decoded |
-| [case11_macoma_single_port_slow](case11_macoma_single_port_slow/) | **single port, clean** | 5e-5 cms | **1 port** | 500 | ✅ to 72.1 m | ✅ | corrects case09: the failure was exit velocity, not port count |
-| [case12_macoma_shoreline_enabled](case12_macoma_shoreline_enabled/) | = baseline, 2.00 m spacing | 0.005 cms | 25 × 2.00 m | 400 | ✅ unmerged, to 207.9 m | ✅ | shoreline **checkbox on**, 60°+5 m — still no effect |
-| [case00_macoma_legacy_fps](case00_macoma_legacy_fps/) | — | — | — | **0** | — | — | Dec 2025, older exe build; header-only, **no data rows**. Format artifact: proves per-column **ft** unit flags |
+| [case01_cms](case01_cms/) | **negatively buoyant** | 0.005 **cms** | 25 × 2.00 m | 420 | ❌ **skipped** | — | oscillates; unmerged |
+| [case02_mgd](case02_mgd/) | negatively buoyant, weak momentum | 0.005 **MGD** | 25 × 2.00 m | 410 | ✅ runs while unmerged, to 501.6 m | — | `.prj` saved empty; settings recovered from case03 |
+| [case03_carbonate](case03_carbonate/) | same as case02, **bit-identical** | 0.005 MGD | 25 × 2.00 m | 410 | ✅ runs, to 212.4 m | ✅ **TA/DIC/pH/Ω/rates** | **the key case** — effluent TA ≈ 4115, near-port pH 10.00 |
+| [case04_ta_dic](case04_ta_dic/) | same as case03, **bit-identical** | 0.005 MGD | 25 × 2.00 m | 410 | ✅ | ✅ TA+DIC entered | diagnostic: pH ignored; unit bug + precip formula decoded |
+| [case05_merging](case05_merging/) | negatively buoyant, **plumes MERGE** | 0.005 cms | 25 × **0.60 m** | 417 | ✅ merged, to 507.2 m | ✅ | **`merging happened`** — merges at dia = spacing at 90°; interval 5 |
+| [case06_arag_s36](case06_arag_s36/) | **positively buoyant, surfaces** | 0.005 cms | 25 × 0.60 m | 356 | ✅ merged, to 504.7 m | ✅ **R_arg nonzero** | ambient S=36; aragonite band + inert `Ca` both confirmed |
+| [case07_s45_dense](case07_s45_dense/) | **strongly dense**, 45 psu effluent | 0.005 cms | 25 × 0.60 m | 529 | ✅ merged, to 210.3 m | ✅ | **S=35 aragonite cutoff crossed mid-trace**; no bottom hit (traps at 3.2 m) |
+| [case08_shoreline](case08_shoreline/) | = case05 | 0.005 cms | 25 × 0.60 m | 417 | ✅ to 209.5 m | ✅ | shoreline vector 45° — **no effect at all**; two runs byte-identical |
+| [case09_single_port](case09_single_port/) | **exe fails** | 0.005 cms | **1 port** | 5001 | all NaN | all NaN | 955 NaN rows; `(Ω−1)^N` NaN for Ω<1; plume rises above the surface |
+| [case10_bottom_hit](case10_bottom_hit/) | dense, **hits the seabed** | 0.005 cms | 25 × 0.60 m | 345 | ✅ to 208.5 m | ✅ | **`Plume hits the bottom`** — elevation 1 m; boundary criterion decoded |
+| [case11_single_port_slow](case11_single_port_slow/) | **single port, clean** | 5e-5 cms | **1 port** | 500 | ✅ to 72.1 m | ✅ | corrects case09: the failure was exit velocity, not port count |
+| [case12_shoreline_enabled](case12_shoreline_enabled/) | = baseline, 2.00 m spacing | 0.005 cms | 25 × 2.00 m | 400 | ✅ unmerged, to 207.9 m | ✅ | shoreline **checkbox on**, 60°+5 m — still no effect |
+| [case00_legacy_fps](case00_legacy_fps/) | — | — | — | **0** | — | — | Dec 2025, older exe build; header-only, **no data rows**. Format artifact: proves per-column **ft** unit flags |
 
 Three runs (case02, case03, case04) share bit-identical hydrodynamics and differ
 only in chemistry — the most productive artifacts in the set. It also proves
@@ -60,7 +67,7 @@ chemistry does not feed back on the plume dynamics.
 
 The archive continues past case12 with the designed experiments — same columns, one row per
 case (the folder's own `README.md` carries the full story, and `LEDGER.md` cites them by row).
-Where a README omits an input it inherits (a flow, a spacing), the Macoma or upstream-example
+Where a README omits an input it inherits (a flow, a spacing), the archived-diffuser (case03) or upstream-example
 baseline is shown:
 
 | Case | Regime | Flow | Ports | Steps | Far-field | Chem | Notes |
@@ -68,7 +75,7 @@ baseline is shown:
 | [case13_generated_example](case13_generated_example/) | positively buoyant, surfaces | 8.00 MGD | 18 × 6.10 m | 275 | ✅ to 104.5 m, width **96.29 m** | ✅ carbonate on | first project written by the port; exe loads it and the near field is **bit-identical** to upstream — and the 96.29 vs 109.59 m gap decoded the **effective-spacing cosine**, `17 × 6.10 × cos30° + 6.481` |
 | [case14_generated_nochem](case14_generated_nochem/) | positively buoyant, runs past the surface | 8.00 MGD | 18 × 6.10 m | 476 | ✅ width **97.60 m** | — (chemistry off) | same `.prj` with chem off and the surface box cleared: **cosine law confirmed a second time off a different final diameter**; ⛔ its archived `.prj` is stale, so the "byte-identical `.prj`s stop differently" claim (row 187) is void — see case46 |
 | [case15_oldbuild_angle45](case15_oldbuild_angle45/) | negatively buoyant, unmerged | 0.005 cms | 25 × 2.00 m | 2 arms, 84 rows | — | — | old build at 90° and 45°: **merging is build-invariant, the width formula is not** — and the merging angle factor is *not* `cos`, it sits at `cos^½`–`cos^⅔` |
-| [case16_oldbuild_angle_sweep](case16_oldbuild_angle_sweep/) | negatively buoyant, Macoma base | 0.005 cms | 25 × 2.00 m | 5 arms, 83–494 rows | ✅ test20 only (width 50.12 m) | — | old-build H-angle sweep 45–175°; **the 45°/135° mirror pair merges at `d/L` = 0.8430 identically**, pinning `\|sin ψ\|` independently (row 205). No `.prj` survives for any of the five |
+| [case16_oldbuild_angle_sweep](case16_oldbuild_angle_sweep/) | negatively buoyant, archived-diffuser base | 0.005 cms | 25 × 2.00 m | 5 arms, 83–494 rows | ✅ test20 only (width 50.12 m) | — | old-build H-angle sweep 45–175°; **the 45°/135° mirror pair merges at `d/L` = 0.8430 identically**, pinning `\|sin ψ\|` independently (row 205). No `.prj` survives for any of the five |
 | [case17_independent_farfield](case17_independent_farfield/) | — (no near field) | — | — | — | ✅ **standalone Brooks**, 50 m width, α 0.0003, D₀ = 100 | — | the exe's far-field calculator run alone — **the only place Brooks is observable without a near field in front of it**; our integration matches to 4.8×10⁻⁴ |
 | [case18_zero_current_pair](case18_zero_current_pair/) | negatively buoyant, **none merge** | 0.005 / 5e-5 cms | 25 or **1** × 2.00 m | 6 arms, 365–768 rows | ❌ | — | the entrainment isolation set: **Taylor α = 0.0967/0.0991 against the entered 0.1**, and the contraction coefficient is the vena contracta (`b₀ = (d/2)√c`) |
 | [case19_current_sweep](case19_current_sweep/) | negatively buoyant, single plume | 5e-5 cms | **1 port** | 4 arms, 318–472 rows | ❌ | — | current sweep 0.01–0.10 m/s: **the cross-flow closure `k` does not transfer** (0.05→0.25→0.45) so `ForcedEntrainment.cross_flow` defaults to 0; test27 ≡ test24 byte for byte proves determinism |
@@ -76,7 +83,7 @@ baseline is shown:
 | [case21_merging_spacing_prediction](case21_merging_spacing_prediction/) | negatively buoyant, all merge | 0.005 cms | 25 × 1.00–2.00 m | 3 arms, 494–526 | — | — | 85° offset, spacing 1.0/1.5/2.0 m against a **prediction registered before the runs**: the derived instantaneous-heading law tracks the curve with no free parameter, **the fitted ellipse is excluded by 13–23 %** |
 | [case22_limiting_spacing](case22_limiting_spacing/) | dense, sinks (−45°), traps | 0.005 cms | **1 port**, 0.20 m | 2 arms, to step 527 | — | — | first port-generated `.prj`s with predictions pre-registered: **`merging happened` fires on a single port** — UM3's limiting-spacing rule, no port-count guard; its "caps a runaway" claim is retracted |
 | [case23_limiting_spacing_gap](case23_limiting_spacing_gap/) | dense, sinks, traps | 0.005 cms | **1 port**, 2.0 m depth | 575 | — | — | the 2.0 m-depth run that separates the two readings case22 left: **threshold is `diameter > port depth`, not twice it**, bracketed (0.539, 1.014] — so PLUMES2.0 ≠ the Visual Plumes UM3 source |
-| [case24_macoma_dissolved_oxygen](case24_macoma_dissolved_oxygen/) | merges & surfaces (36–38); unmerged pair (39–40) | 0.005 cms | 25 × 1.00 / 2.00 m | 5 arms, 420–526 | ❌ none reach it | ✅ **DO** (+ carbonate on test38) | the DO module's near field: **DO is a pure overlay and the entrained ambient is path-integrated**, `d(DO·D)/dD = DO_a(z)` to 0.0064 mg/L; both BOD channels inert; seed = `DO_e − IDOD` |
+| [case24_dissolved_oxygen](case24_dissolved_oxygen/) | merges & surfaces (36–38); unmerged pair (39–40) | 0.005 cms | 25 × 1.00 / 2.00 m | 5 arms, 420–526 | ❌ none reach it | ✅ **DO** (+ carbonate on test38) | the DO module's near field: **DO is a pure overlay and the entrained ambient is path-integrated**, `d(DO·D)/dD = DO_a(z)` to 0.0064 mg/L; both BOD channels inert; seed = `DO_e − IDOD` |
 | [case25_farfield_bod](case25_farfield_bod/) | positively buoyant, surfaces | 8.00 MGD | 18 × 6.10 m | 3 arms | ✅ **first far field with BOD active** | ✅ DO/BOD | uniform-ambient runs collapse to eq 23 to 0.0078 mg/L and eq 30 carries `1/FF` — but **eqs 28–29 are refuted: run 3's DO *rises* to 15.5 mg/L in oxygen-demanding water**, an exe defect |
 | [case26_farfield_bod_rates](case26_farfield_bod_rates/) | positively buoyant, surfaces | 8.00 MGD | 18 × 6.10 m | 3 arms | ✅ to 500 m | ✅ DO/BOD, rates 1–5 /day | rates raised so the sag curves (0.47 vs 0.0019 mg/L): **far-field DO reaches 99.9 mg/L, ~9× saturation**, matching a pre-registered prediction of 102.4 — the defect confirmed at two rates |
 | [case27_farfield_bod_conversion](case27_farfield_bod_conversion/) | positively buoyant, surfaces | 8.00 MGD | 18 × 6.10 m | 10 arms, 275–572 near steps | ✅ to 500 m | ✅ DO/BOD, IDOD arm | `D_near` swept 169.75 → 246.61 (45 %) at fixed inputs: **eq 28's `/D` is simply not in the exe** — demand spread 1.7 % where eq 28 needs 31 %; run 7 prints **−184.985 mg/L DO** with no warning; retires the phantom "amplitude" |
@@ -105,6 +112,7 @@ baseline is shown:
 | [case50_eddy_law_selector](case50_eddy_law_selector/) | negatively buoyant (case03 geometry) | 0.005 MGD | 25 × 2.00 m | 2 arms × 410 | ✅ **constant and linear eddy laws**, to 502.6 m | — (chemistry off) | the two non-default far-field laws, never before run: **far-field flags 2/3/4 are one-hot** (`1,1,0,0,…` constant; `1,0,1,0,…` linear), both reproduce our Brooks to 2×10⁻⁴ — and the linear width exposed **a manual typo the port had copied** (176.12 → 112.35). Rows 280, 280b |
 | [case51_flag_decode](case51_flag_decode/) | positively buoyant, surfaces (upstream example, **legacy build**) | 8.00 MGD | 18 × 6.10 m | 9 arms (8 traces × 55 + one failed run) | ✅ base to 501.9 m, width 109.59 m | — (chemistry off) | one undecoded flag flipped per arm: **far-field flags 1 and 5 each gate the far field** (near field byte-identical, block absent), **flag 7 is exe-owned** (written 1, rewritten 0), nf 1/5/6 + ff 6 file-owned and inert on a surfacing run — and ⚠️⚠️ **near-field flag 3 = 1 makes the exe fail silently and truncate the project** (no `.dat`, loader crashes on the remains). Rows 281–282; round 2 named the controls (the filled `RECON_CHECKLIST.md` lives here) |
 | [case52_bottom_stop_flag](case52_bottom_stop_flag/) | **dense, −45°, hits the seabed** 0.3 m below the port | 0.000219 cms | 25 × 2.00 m | 2 arms, 24 / 38 rows | ✅ 503 / 207 m | — | round 2's output arm: **near-field flag 1 is the stop-at-bottom box (1 = stop)** — bit-identical to contact at step 231, the cleared box sails 14 printed rows past it through `Plume traps` (row 283). ⭐ The pre-registered forecast hit: predicted ~21 s / dilution 93, exe printed 21.409 s / 97.200 |
+| [case55_macoma_site](case55_macoma_site/) | **the site itself**: neutrally buoyant intake water, merges | **1.64 L/s** (5900 L/h) | 25 × **0.6096 m** (2 ft, feet-entered) | 2 arms, 57 / 56 rows | ✅ both, to 500 m | ✅ TA 2146 / DIC 2092 uniform (ran at 2150 / 2090) | **row 286**: parity to trapping (±0.3–0.8 % to D ≈ 39), then the **post-trapping shortfall at full size**: −6.6 % / −5.4 % at the end, starting after `Plume traps` and before the merge banner (row 286); wastefield banner exact, far-field table opens +1.31 m (virtual origin, rows 116/256) |
 
 ✅ **Merging is covered** by case05, and the gaps this section used to list are closed
 by the table above it: **bottom hit** by case10, **single port** by case11, and
@@ -150,7 +158,7 @@ Decoded and confirmed on two or more cases:
 | ~~TA/DIC are **integrated stepwise through the LCV loop**, not computed algebraically from dilution (~7 ppm/row drift)~~ ⛔ **Retracted**: mixing is algebraic in the dilution — one scalar endmember explains every row (row 39); the apparent drift was the `1/(D−1)` sensitivity of the inversion to a slightly-wrong endmember | case03, case04, case32 |
 | **`.prj` unit flag map: 1 = primary unit, 2 = alternate** (feet for lengths, m³/s for flow) | case00's matched `.prj`+`.dat` pair: stored 2.0 / 20.7 / 207.0 echo as 0.61 / 6.31 / 63.09 m, all ×0.3048 |
 | flag-to-column alignment: diffuser maps 1:1; effluent, mixing zone and ambient each carry **one leading flag** then map 1:1 | case00 (effluent flow is column 0, selector is flag index 1) |
-| the **number of `.prj` plot flags is build-dependent** — 1 near-field flag in Dec 2025, 4 in 2026 | case00 `Macoma.prj` (147 lines) vs case01 (149) |
+| the **number of `.prj` plot flags is build-dependent** — 1 near-field flag in Dec 2025, 4 in 2026 | case00 `project.prj` (147 lines) vs case01 (149) |
 | Entered `Ca` is **not used for Ω** — Ω matches salinity-derived calcium | case03 (`Ca=100` µmol/kg vs seawater ~10 300) |
 | The `.dat` header text differs between exe builds (`Avg-Dil` vs `Dilutn`, bare vs parenthesised units) — the reader must not key on exact strings | case00 vs all 2026 runs |
 | ~~The `AmbientChem` pH column is optional — it can be left blank~~ ⚠️ It ran blank on 2026-08-12 (case03) and was **refused blank on 2026-08-25** (case47) — session-dependent; the generator now fills it (`experiments.fill_ambient_ph`) and the exe ignores the value (SSMC item 10) | case03, case47 |
@@ -166,7 +174,7 @@ Decoded and confirmed on two or more cases:
 | the solver step cap is **5000** | case09 ran to 5001 |
 | the **shoreline vector is inert**, even with its enable checkbox ticked | case08 (45°, 45°+5 m byte-identical) and case12 (60°+5 m, checkbox on, plume travels past 5 m) |
 | `R_cal = exp(-0.106)(Ω_c−1)^2.87` and `R_arg = exp(1.11)(Ω_a−1)^2.26` for `35<S<44` | exact to 5 sig figs; case03-06 |
-| ~~**aragonite returns exactly 0 below S = 35** — the branch has no coverage there~~ ⛔ superseded by the band row above: every Macoma case sat inside 25–35, which is how a gap impersonated a floor | case06 (S 35.09-36.00, R_arg nonzero in 71/71) vs case05 (S 31.1-34.6, 0/83) |
+| ~~**aragonite returns exactly 0 below S = 35** — the branch has no coverage there~~ ⛔ superseded by the band row above: every archived-diffuser case sat inside 25–35, which is how a gap impersonated a floor | case06 (S 35.09-36.00, R_arg nonzero in 71/71) vs case05 (S 31.1-34.6, 0/83) |
 | the entered **`Ca` is entirely inert** — no effect on Ω or the rates | case06 (`Ca=5000` vs seawater ~10500; Ω unchanged) |
 | surfacing fires near `depth = radius` but the example lags it by 2 intervals | case06 brackets 1.035→0.966; example 0.837→0.775 |
 | surfacing is **not always terminal** — governed by the max rise/fall switch | case06 (switch 3) continues 96 steps past it; example (switch 2) stops |
@@ -181,7 +189,7 @@ Decoded and confirmed on two or more cases:
 
 Corrected along the way: case01 suggested "unmerged ⇒ far-field skipped", and
 case02 disproved it — the unmerged *warning* is independent of whether Brooks
-runs. See [case02](case02_macoma_mgd/README.md).
+runs. See [case02](case02_mgd/README.md).
 
 ## case18 — the Phase 5 isolation set (test21–test26)
 

@@ -415,9 +415,7 @@ def vertical_plane_frame(
     if float(np.linalg.norm(normal)) < 1e-12:
         normal = np.array([1.0, 0.0, 0.0])
     out_of_plane = normal / float(np.linalg.norm(normal))
-    return LocalFrame(
-        along=along, in_plane=_cross3(out_of_plane, along), out_of_plane=out_of_plane
-    )
+    return LocalFrame(along=along, in_plane=_cross3(out_of_plane, along), out_of_plane=out_of_plane)
 
 
 def aspiration_velocity(
@@ -466,9 +464,9 @@ def aspiration_velocity(
         raise ValueError("the aspiration velocity is undefined for a motionless element")
 
     frame = vertical_plane_frame(plume_velocity, ambient_velocity)
-    in_plane_current = ambient_velocity - float(
-        np.dot(ambient_velocity, frame.out_of_plane)
-    ) * frame.out_of_plane
+    in_plane_current = (
+        ambient_velocity - float(np.dot(ambient_velocity, frame.out_of_plane)) * frame.out_of_plane
+    )
     along = float(np.dot(in_plane_current, frame.along))
     # The cross-track component. The ambient is horizontal, so resolving it against the
     # trajectory is the same as scaling by the elevation angle's sine.
@@ -557,9 +555,7 @@ class Um3Entrainment:
         # so undo the sum, weight each half, and re-add.
         shear = alpha * abs(speed - along)
         angle = math.atan(math.sqrt(across / shear - 1.0)) if across > shear > 0.0 else 0.0
-        reduced = shear * (1.0 - angle / math.pi) - (across / math.pi) * (
-            1.0 - math.sin(angle)
-        )
+        reduced = shear * (1.0 - angle / math.pi) - (across / math.pi) * (1.0 - math.sin(angle))
         area = taylor_area(radius, thickness)
         paired = ambient_density * (
             factors.taylor * area * reduced
@@ -584,9 +580,7 @@ class Um3Entrainment:
         # Curvature pairs with `u2` (eq 41) and stays **signed** -- positive curvature closes
         # area off. Only the cylinder half of the published `u2` pairing was cancelled into
         # the aspiration velocity, so this one still stands on its own.
-        curvature = (
-            self.curvature * factors.curvature * ambient_density * across * areas.curvature
-        )
+        curvature = self.curvature * factors.curvature * ambient_density * across * areas.curvature
         sideways = (
             self.out_of_plane
             * factors.out_of_plane

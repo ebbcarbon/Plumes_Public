@@ -38,7 +38,7 @@ from plumes2.io import load_project
 from plumes2.results import run
 
 ROOT = Path(__file__).resolve().parents[1]
-CASE03 = ROOT / "reference_cases" / "case03_macoma_carbonate" / "test.prj"
+CASE03 = ROOT / "reference_cases" / "case03_carbonate" / "test.prj"
 PENDING = ROOT / "reference_cases" / "pending"
 
 #: TA 4000 at DIC 2500 overlaps case03's pH range (its derived DIC was 1646 at pH 10.5); the

@@ -167,7 +167,7 @@ def test_the_three_areas_follow_the_published_equations() -> None:
 
 
 def test_the_curvature_area_is_signed() -> None:
-    """"Positive curvature has the effect of reducing the total projected area." """
+    """ "Positive curvature has the effect of reducing the total projected area." """
     rising = projected_area(0.5, 0.2, 0.1, +0.3)
     falling = projected_area(0.5, 0.2, 0.1, -0.3)
     assert rising.curvature < 0.0 < falling.curvature
@@ -228,9 +228,7 @@ def test_each_weight_switches_its_own_term() -> None:
     for field in ("growth", "cylinder", "curvature"):
         reduced = ProjectedAreaEntrainment(**{field: 0.0}).rate(*arguments)
         assert reduced != pytest.approx(full), field
-    assert ProjectedAreaEntrainment(
-        growth=0.0, cylinder=0.0, curvature=0.0
-    ).rate(*arguments) == 0.0
+    assert ProjectedAreaEntrainment(growth=0.0, cylinder=0.0, curvature=0.0).rate(*arguments) == 0.0
 
 
 # --------------------------------------------------------------------- initial state
@@ -496,9 +494,10 @@ def _measured_terms(path: Path, current: float, window: int = 12):
     along = velocity / speed[:, None]
     arc = np.linalg.norm(position[index + window] - position[index - window], axis=1)
 
-    total = (np.log(frame["Dilutn"].to_numpy(dtype=float))[index + window] - np.log(
-        frame["Dilutn"].to_numpy(dtype=float)
-    )[index - window]) / span
+    total = (
+        np.log(frame["Dilutn"].to_numpy(dtype=float))[index + window]
+        - np.log(frame["Dilutn"].to_numpy(dtype=float))[index - window]
+    ) / span
     b, rho, rho_a = radius[index], plume_density[index], ambient_density[index]
 
     taylor_absolute = 2.0 * rho_a * alpha * speed / (rho * b)
@@ -728,12 +727,14 @@ def test_merging_suppresses_entrainment_by_the_measured_amount() -> None:
     merged = read_dat(SPACING / "test32.dat").nearfield
     unmerged = read_dat(SPACING / "test31.dat").nearfield
     count = min(len(merged), len(unmerged))
-    gain_merged = np.diff(merged["Dilutn"].to_numpy(dtype=float)[:count]) / merged[
-        "Dilutn"
-    ].to_numpy(dtype=float)[: count - 1]
-    gain_unmerged = np.diff(unmerged["Dilutn"].to_numpy(dtype=float)[:count]) / unmerged[
-        "Dilutn"
-    ].to_numpy(dtype=float)[: count - 1]
+    gain_merged = (
+        np.diff(merged["Dilutn"].to_numpy(dtype=float)[:count])
+        / merged["Dilutn"].to_numpy(dtype=float)[: count - 1]
+    )
+    gain_unmerged = (
+        np.diff(unmerged["Dilutn"].to_numpy(dtype=float)[:count])
+        / unmerged["Dilutn"].to_numpy(dtype=float)[: count - 1]
+    )
     overlap = merged["P-dia"].to_numpy(dtype=float)[: count - 1] / 1.0
 
     uncapped = (
@@ -981,10 +982,7 @@ def test_the_merge_trigger_needs_no_fitted_constant_at_85_degrees() -> None:
     raw = solution.solution.sol(times)
     velocity = raw[1:4] / raw[0]
     spacing = np.array(
-        [
-            2.0 * effective_half_spacing(2.0, 175.0 + 90.0, velocity[:, i])
-            for i in range(times.size)
-        ]
+        [2.0 * effective_half_spacing(2.0, 175.0 + 90.0, velocity[:, i]) for i in range(times.size)]
     )
     fired = np.flatnonzero(ours.diameter >= spacing)
     assert fired.size, "test19 must merge"

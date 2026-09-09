@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from plumes2.comparison import Comparison, Difference, differences, flatten_case
+from plumes2.config import EffluentChemistry
 from plumes2.io.project import load_project
 from plumes2.results import run
 
@@ -168,6 +169,70 @@ def test_an_empty_comparison_is_refused() -> None:
 
 
 # ------------------------------------------------------------------ the long frame
+
+
+def test_a_uniform_table_column_that_differs_is_named_in_the_legend() -> None:
+    """Two ambients, same profile, 0.02 against 0.05 m/s: the legend says 'current_speed', not
+    'levels (6 levels)' twice."""
+    base = _base()
+    faster = base.model_copy(
+        update={
+            "ambient": base.ambient.model_copy(
+                update={
+                    "levels": [
+                        level.model_copy(update={"current_speed": 0.05})
+                        for level in base.ambient.levels
+                    ]
+                }
+            )
+        }
+    )
+    found = differences([base, faster])
+    fields = [difference.field for difference in found]
+    assert "ambient.levels.current_speed" in fields
+    assert "ambient.levels" not in fields  # the whole table steps aside for its named column
+    (difference,) = [d for d in found if d.field == "ambient.levels.current_speed"]
+    assert difference.describe(0) != difference.describe(1)
+    assert "current_speed 0.05" in difference.describe(1)
+
+
+def test_labels_grow_past_the_bound_until_no_two_runs_share_one() -> None:
+    """Four effluents: two are the same seawater, so the first two fields cannot tell them apart.
+
+    The 2026-09-08 comparison report printed 'salinity 30.9, excess_density 0, (+2 more)' twice.
+    The bound is a bound on clutter, not a licence to misidentify a line: fields are added until
+    every label is distinct.
+    """
+
+    class _Fake:
+        def __init__(self, case) -> None:  # type: ignore[no-untyped-def]
+            self.case = case
+
+    base = _base()
+
+    def variant(salinity: float, excess: float, alkalinity: float, dic: float):  # type: ignore[no-untyped-def]
+        return base.model_copy(
+            update={
+                "effluent": base.effluent.model_copy(
+                    update={"salinity": salinity, "excess_density": excess}
+                ),
+                "effluent_chemistry": EffluentChemistry(total_alkalinity=alkalinity, dic=dic),
+            }
+        )
+
+    runs = (
+        _Fake(variant(30.9, 0.0, 4895.0, 2500.0)),
+        _Fake(variant(0.0, 0.15, 3260.0, 0.0)),
+        _Fake(variant(30.9, 0.0, 20582.0, 2500.0)),
+        _Fake(variant(0.0, 4.66, 103098.0, 0.0)),
+    )
+    labels = Comparison(runs).labels()  # type: ignore[arg-type]
+    assert len(set(labels)) == 4, labels
+    # The two seawater runs are told apart by the field that actually differs between them.
+    assert "total_alkalinity 4895" in labels[0] and "total_alkalinity 20582" in labels[2]
+    # Two runs the bound already separates keep the short form.
+    short = Comparison(runs[:2]).labels()  # type: ignore[arg-type]
+    assert short[0].endswith("(+2 more)") and len(set(short)) == 2
 
 
 @pytest.mark.slow

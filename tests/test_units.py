@@ -27,8 +27,8 @@ from plumes2.units import (
 )
 from tests.conftest import REFERENCE_CASES, UPSTREAM
 
-LEGACY_PRJ = REFERENCE_CASES / "case00_macoma_legacy_fps" / "Macoma.prj"
-LEGACY_DAT = REFERENCE_CASES / "case00_macoma_legacy_fps" / "ModelResults_Macoma1.dat"
+LEGACY_PRJ = REFERENCE_CASES / "case00_legacy_fps" / "project.prj"
+LEGACY_DAT = REFERENCE_CASES / "case00_legacy_fps" / "ModelResults_legacy1.dat"
 
 
 class TestConstants:
@@ -118,8 +118,8 @@ class TestModernFiles:
 
     def test_case01_flow_is_cms_and_23x_larger(self) -> None:
         """The finding that started all this: the same stored 0.005 differs 23x."""
-        case01 = read_prj(REFERENCE_CASES / "case01_macoma_cms" / "Macoma2.prj")
-        case03 = read_prj(REFERENCE_CASES / "case03_macoma_carbonate" / "test.prj")
+        case01 = read_prj(REFERENCE_CASES / "case01_cms" / "project.prj")
+        case03 = read_prj(REFERENCE_CASES / "case03_carbonate" / "test.prj")
         as_cms = convert_to_si(
             TableKind.EFFLUENT,
             "flow",

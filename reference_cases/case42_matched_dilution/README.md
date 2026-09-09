@@ -14,7 +14,7 @@ This pair holds the **dilution** fixed while the spacing moves 1.5×.
 | **test70** | 5.00 m | 0.0191 m | 0.0112598 m³/s | 35 psu | 427 | ⚠️ step 367 — see below | — |
 
 Base otherwise as case41: 25 ports, 2.0 m port depth, 45° vertical, 65° horizontal into a 90°
-current at 0.02 m/s, ~31 psu Macoma ambient, contraction 0.61, aspiration 0.1, output interval 1.
+current at 0.02 m/s, ~31 psu case03 ambient, contraction 0.61, aspiration 0.1, output interval 1.
 
 ⚠️ The `.dat` diffuser echo rounds to two decimals (row 141), so both runs print `P-dia 0.02` and
 `Ttl-flo 0.01`. The archived `.prj` files are the record, and they are the ones the exe wrote back

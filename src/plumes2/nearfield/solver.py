@@ -144,13 +144,17 @@ class NearFieldSolution:
         temperature = raw[4] / mass
         salinity = raw[5] / mass
         speed = np.linalg.norm(velocity, axis=0)
-        plume_density = np.asarray(
-            density_of(
-                salinity,
-                temperature,
-                equation_of_state=self.case.near_field.equation_of_state,
-            ),
-            dtype=np.float64,
+        # Plus the effluent's density-only tracer, diluted with the mass (`LcvState.density`).
+        plume_density = (
+            np.asarray(
+                density_of(
+                    salinity,
+                    temperature,
+                    equation_of_state=self.case.near_field.equation_of_state,
+                ),
+                dtype=np.float64,
+            )
+            + raw[9] / mass
         )
         geometry = [
             _merged_geometry(self.case, self.geometry, m, r, s, v, self.merging)
@@ -222,9 +226,9 @@ def _density_partials(
         return float(density_of(sal, temp, 0.0, equation_of_state=equation_of_state))
 
     by_salinity = (rho(high, temperature) - rho(low, temperature)) / (high - low)
-    by_temperature = (
-        rho(salinity, temperature + step) - rho(salinity, temperature - step)
-    ) / (2.0 * step)
+    by_temperature = (rho(salinity, temperature + step) - rho(salinity, temperature - step)) / (
+        2.0 * step
+    )
     return by_salinity, by_temperature
 
 
@@ -365,9 +369,7 @@ def _make_rhs(
                 elevation_gradient,
             )
 
-        by_salinity, by_temperature = _density_partials(
-            state.salinity, state.temperature, eos
-        )
+        by_salinity, by_temperature = _density_partials(state.salinity, state.temperature, eos)
         horizontal = float(np.hypot(state.velocity[0], state.velocity[1]))
         # Seed the sweep with the closure evaluated at zero path curvature, so the UM3 path
         # -- whose Taylor part lives inside `forced` -- does not start from zero.
@@ -379,7 +381,12 @@ def _make_rhs(
             speed_rate = float(np.dot(state.velocity, acceleration)) / speed
             salinity_rate = (sample.salinity - state.salinity) * entrainment / state.mass
             temperature_rate = (sample.temperature - state.temperature) * entrainment / state.mass
-            density_rate = by_salinity * salinity_rate + by_temperature * temperature_rate
+            # The excess-density tracer is conserved as m * excess, so it decays as entrainment/m.
+            density_rate = (
+                by_salinity * salinity_rate
+                + by_temperature * temperature_rate
+                - state.excess_density * entrainment / state.mass
+            )
             # b = sqrt(k m / (rho |V|)), so db/b = (dm/m - drho/rho - d|V|/|V|) / 2.
             radius_rate = (
                 0.5
@@ -411,6 +418,8 @@ def _make_rhs(
         derivative[4] = sample.temperature * entrainment
         derivative[5] = sample.salinity * entrainment
         derivative[6:9] = state.velocity
+        # m * excess is conserved: the ambient brings none in, so the slot's rate is zero.
+        derivative[9] = 0.0
         return derivative
 
     return rhs
@@ -446,9 +455,7 @@ def integrate(
     changes nothing on a single port, or before neighbouring plumes touch.
     """
     state0, geometry = initial_state(case)
-    ambient = AmbientProfileView(
-        case.ambient, equation_of_state=case.near_field.equation_of_state
-    )
+    ambient = AmbientProfileView(case.ambient, equation_of_state=case.near_field.equation_of_state)
     forced = forced if forced is not None else Um3Entrainment()
     choices = merging if merging is not None else AS_THE_EXE_DOES
     rhs = _make_rhs(case, geometry, ambient, forced, relative_shear, choices)
@@ -480,9 +487,9 @@ def integrate(
     def trapping(_t: float, vector: NDArray[np.float64]) -> float:
         """`rho_j - rho_a`, zero at neutral buoyancy -- the exe's "Plume traps"."""
         state = unpack(vector)
-        return state.density(
-            equation_of_state=case.near_field.equation_of_state
-        ) - float(ambient.sample(state.depth).density)
+        return state.density(equation_of_state=case.near_field.equation_of_state) - float(
+            ambient.sample(state.depth).density
+        )
 
     def reversal(_t: float, vector: NDArray[np.float64]) -> float:
         """Vertical velocity, zero at a maximum rise **or** fall."""

@@ -8,7 +8,7 @@ far-field flags, `1,0,0,1,1,1,0`, with every far-field header saying `4/3 Power 
 been observed (case49 README; `io/prj.py`'s `farfield_flags` docstring). Two runs of one project
 settle it: the same case under `Constant` and under `Linearly varying`, everything else as loaded.
 
-Ebb's default profile (case03's Macoma configuration, `studies/ebb_dose_study.py`) is the base,
+Ebb's default profile (case03's configuration, `studies/ebb_dose_study.py`) is the base,
 without chemistry -- the far field is what is being read, and a chemistry-free run needs nothing
 typed into the carbonate dialog. The predictions below come from the port's own Brooks
 implementation (`farfield.brooks`, confirmed to 5e-4 against the exe's standalone calculator on
@@ -113,7 +113,7 @@ def main() -> None:
         predictions = {
             "near field, every column": (
                 "bit-identical to case03's interval-1 trace "
-                "(`case03_macoma_carbonate/kso4_option3.dat`, hydrodynamic columns) -- the law is "
+                "(`case03_carbonate/kso4_option3.dat`, hydrodynamic columns) -- the law is "
                 "a far-field input and nothing upstream of the transition reads it"
             ),
             "the seven far-field flags in the as-run `.prj`": (
@@ -144,12 +144,10 @@ def main() -> None:
                 "stop plume at surface hit: **leave as loaded** -- do not untick by habit",
                 f"**far-field eddy diffusivity: select `{label}`** -- the selector opens on the "
                 "4/3 law; this run exists to see what selecting another option does",
-                "carbonate module: **off** -- nothing to type in the chemistry dialog for this "
-                "run",
+                "carbonate module: **off** -- nothing to type in the chemistry dialog for this run",
             ),
             notes=(
-                "Ebb's default profile (case03's Macoma configuration) without chemistry, "
-                "interval 1.",
+                "Ebb's default profile (case03's configuration) without chemistry, interval 1.",
                 f"Copy the trace aside as `{name}.dat` and the rewritten project as "
                 f"`asrun_{name}.prj` before any further run.",
                 "One run per note, one law per run. The sibling directory asks for the other "

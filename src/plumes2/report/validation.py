@@ -2,8 +2,10 @@
 
 Phase 7's deliverable, and it reuses the standard report's page rather than inventing a second
 look: same validated palette, same self-contained single file, same escaping. A validation report
-is a table document rather than a figure document, so its panels carry no SVG -- see
-`page._panel_html`, which renders a table-only panel with its table open instead of folded away.
+is a table document rather than a figure document, so its panels carry no figure -- see
+`page._panel_html`, which renders a table-only panel with its table open instead of folded away,
+and `pdf._section`, which does the same on paper. Like the run report it is a PDF or an HTML file
+by the suffix of the path it is written to.
 
 ⚠️ **A pass here is not a claim of correctness, and the report says so.** Three things are
 deliberately visible on the page: which targets rest on the exe rather than on a manual or an
@@ -20,6 +22,7 @@ import pandas as pd
 
 from plumes2 import __version__
 from plumes2.provenance import git_state
+from plumes2.report import write_document
 from plumes2.report.page import Header, render_page
 from plumes2.report.panels import Panel
 from plumes2.validation import (
@@ -106,8 +109,8 @@ def _phase_panel(phase: int, outcomes: list[Outcome]) -> Panel:
     )
 
 
-def render_validation(outcomes: list[Outcome] | None = None) -> str:
-    """The validation report as an HTML string."""
+def _validation_document(outcomes: list[Outcome] | None) -> tuple[Header, list[Panel]]:
+    """The validation report's header and panels -- everything but the format."""
     results = outcomes if outcomes is not None else run_all()
     passed = sum(outcome.passed for outcome in results)
     executable = sum(count for count, _total in coverage_by_phase().values())
@@ -191,6 +194,12 @@ def render_validation(outcomes: list[Outcome] | None = None) -> str:
             "and 186 among them, and they count as executable because they are measured.",
         ),
     )
+    return header, panels
+
+
+def render_validation(outcomes: list[Outcome] | None = None) -> str:
+    """The validation report as an HTML string."""
+    header, panels = _validation_document(outcomes)
     return render_page(header, panels, footer=_FOOTER)
 
 
@@ -202,18 +211,16 @@ _FOOTER = (
 
 
 def build_validation_report(path: str | Path, outcomes: list[Outcome] | None = None) -> Path:
-    """Write the validation report to `path` and return it."""
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render_validation(outcomes), encoding="utf-8")
-    return target
+    """Write the validation report to `path` -- PDF or HTML by suffix -- and return it."""
+    header, panels = _validation_document(outcomes)
+    return write_document(header, panels, path, footer=_FOOTER)
 
 
 def summary_lines(outcomes: list[Outcome]) -> list[str]:
     """One plain-ASCII line per target, for the CLI.
 
     ASCII because Windows consoles are cp1252 -- the same constraint `plumes2.cli` documents. The
-    HTML report is where the arrows and Greek live.
+    written report is where the arrows and Greek live.
     """
     lines = []
     for outcome in outcomes:

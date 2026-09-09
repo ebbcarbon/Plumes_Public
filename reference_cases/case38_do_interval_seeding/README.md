@@ -5,7 +5,7 @@ things, and could not decide because **every DO trace in the archive printed eve
 the first printed row always at step 1, "seeds at the first printed row" and "seeds at step 1"
 are the same statement. Varying the output interval separates them.
 
-Macoma2 geometry throughout. Only the output interval and the effluent DO change.
+case29's project geometry throughout. Only the output interval and the effluent DO change.
 
 | run | interval | effluent DO | first printed step | `D₀` | `DO₀` | `DO₀·D₀` |
 |---|---|---|---|---|---|---|
@@ -63,6 +63,10 @@ undivided and undiminished — the effluent-carried half of row 250.
 
 ## ⚠️ These runs are sub-critical and go NaN
 
-The Macoma2 project is case29's, at a 0.5 m port. All six terminate in NaN once the plume leaves
+The project is case29's, at a 0.5 m port. All six terminate in NaN once the plume leaves
 the water column and run on to the 5001-step cap, so only the finite prefix is usable — which is
 ample, since everything above is read from the first printed row.
+
+## Names (2026-09-09)
+
+The exe wrote these files under the names on the left; renamed the same day, contents byte-identical (the `.dat` header still echoes the original project title): `Macoma2.prj` → `project.prj`.

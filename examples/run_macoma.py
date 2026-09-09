@@ -1,16 +1,16 @@
 """The Macoma configuration -- Ebb's default profile -- as a called physics package.
 
-Same pattern as `run_from_files.py`, with the real site: case03's diffuser and effluent
-(the archived exe run `reference_cases/case03_macoma_carbonate/`), the measured ambient
+Same pattern as `run_from_files.py`, with the real site: case03's diffuser and flow
+(the archived exe run `reference_cases/case03_carbonate/`), the measured ambient
 profile in `macoma_ambient_levels.csv`, and the ambient carbonate chemistry in
 `macoma_ambient_chemistry.csv`. This is the geometry the Phase 9 dose study ran at
 (`studies/ebb_dose_study/`), so the numbers printed here can be checked against its tables.
 
-Two things are inherited from the archived case, deliberately:
+Two things differ from the archived case's tables, deliberately:
 
-* ⚠️ the ambient chemistry below the deepest measured row (4 m) is **held constant** to the
-  17 m seabed -- the dose study's one stated assumption; replace those CSV rows when a
-  measured profile exists;
+* the ambient carbonate chemistry is the site's, **uniform in depth** -- TA 2146 / DIC 2092
+  umol/kg from the surface to the 17 m seabed (operator, 2026-09-09; Ebb has no depth-resolved
+  measurement at Macoma), replacing the archived case's table;
 * ⚠️ a `GeometryWarning` fires: the seabed (port depth 2 m + elevation 15 m = 17 m) sits
   below the hydrographic profile's last row (15 m). Intentional, not a typo (operator,
   2026-09-01): no measurement exists at 17 m, and the profiles are notional because the
@@ -20,8 +20,8 @@ Run it:
 
     .venv/Scripts/python examples/run_macoma.py
 
-`DOSE_TA` is the knob. At the intake DIC (2500 umol/kg), TA below ~4340 never
-supersaturates brucite at all; the default here, 6000, is dosed enough that the
+`DOSE_TA` is the knob. At the intake DIC (2092 umol/kg, the ambient's), TA below ~3660
+never supersaturates brucite at all; the default here, 6000, is dosed enough that the
 supersaturated window -- centimetres and seconds -- is visible in the output.
 """
 
@@ -44,7 +44,7 @@ from plumes2.sweep import brucite_extract
 HERE = Path(__file__).parent
 
 DOSE_TA = 6000.0  # umol/kg effluent total alkalinity; the study swept 3000 -> 20000
-INTAKE_DIC = 2500.0  # umol/kg; held while TA moves -- the axis a feedstock moves along
+INTAKE_DIC = 2092.0  # umol/kg, the ambient's; held while TA moves -- a feedstock's axis
 
 
 def build_case() -> Case:
@@ -60,10 +60,17 @@ def build_case() -> Case:
             # says 2 m, a unit slip; the site's spacing is corrected here and in the study
             port_depth=2.0,
         ),
-        effluent=Effluent(flow=0.000219063, salinity=35.0, temperature=10.0),
+        # Intake water (operator, 2026-09-08): the archived case03 carries 35 psu / 10 C, which is
+        # denser than the 30.9 psu ambient and made the modelled plume sink.
+        # Outfall flow 5900 L/h (98.3 L/min) over the ports (operator, 2026-09-08); the archived
+        # case03 carries 0.219 L/s, a factor 7.5 low.
+        effluent=Effluent(flow=5900.0 / 3.6e6, salinity=30.9, temperature=11.2),
         near_field=NearFieldSettings(max_rise_or_fall=3),  # as the archived case runs
         effluent_chemistry=EffluentChemistry(total_alkalinity=DOSE_TA, dic=INTAKE_DIC),
-        mixing_zone=MixingZone(acute_distance=20.7, chronic_distance=207.0),
+        # 20.7 ft / 207 ft (operator, 2026-09-02) -- the archived case03 project stores these in
+        # metres, the same feet-as-metres slip as the port spacing. Computed from the foot to match
+        # the study's ACUTE_MZ / CHRONIC_MZ bit for bit.
+        mixing_zone=MixingZone(acute_distance=20.7 * 0.3048, chronic_distance=207.0 * 0.3048),
         ambient=ambient_from_files(
             HERE / "macoma_ambient_levels.csv",
             chemistry=HERE / "macoma_ambient_chemistry.csv",
@@ -81,10 +88,14 @@ def main() -> None:
     print()
 
     extracted = brucite_extract(results)
-    print(f"port: pH {extracted['port_ph_total']:.3f} (total), "
-          f"omega_brucite {extracted['port_omega_brucite']:.1f} (an upper bound)")
-    print(f"termination: {results.termination}; "
-          f"near-field end dilution {results.final_dilution:.0f} at {results.end_time:.0f} s")
+    print(
+        f"port: pH {extracted['port_ph_total']:.3f} (total), "
+        f"omega_brucite {extracted['port_omega_brucite']:.1f} (an upper bound)"
+    )
+    print(
+        f"termination: {results.termination}; "
+        f"near-field end dilution {results.final_dilution:.0f} at {results.end_time:.0f} s"
+    )
     if extracted["omega1_region"] == "never":
         print("brucite: never supersaturated, even undiluted")
     else:

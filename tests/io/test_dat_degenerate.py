@@ -1,6 +1,6 @@
 """Reader behaviour on the exe's degenerate output.
 
-`reference_cases/case09_macoma_single_port` is a run that went numerically bad: 955
+`reference_cases/case09_single_port` is a run that went numerically bad: 955
 rows of NaN, a NaN wastefield width and an all-NaN far-field. Those rows are data --
 they record the failure -- so the reader parses them rather than skipping or raising.
 
@@ -16,10 +16,10 @@ import pytest
 from plumes2.io.dat import read_dat
 from tests.conftest import REFERENCE_CASES
 
-CASE07 = REFERENCE_CASES / "case07_macoma_s45_dense" / "test6_TxtOutputs.dat"
-CASE08 = REFERENCE_CASES / "case08_macoma_shoreline" / "test7_TxtOutputs.dat"
-CASE09 = REFERENCE_CASES / "case09_macoma_single_port" / "test9_TxtOutputs.dat"
-CASE05 = REFERENCE_CASES / "case05_macoma_merging" / "test4_TxtOutputs.dat"
+CASE07 = REFERENCE_CASES / "case07_s45_dense" / "test6_TxtOutputs.dat"
+CASE08 = REFERENCE_CASES / "case08_shoreline" / "test7_TxtOutputs.dat"
+CASE09 = REFERENCE_CASES / "case09_single_port" / "test9_TxtOutputs.dat"
+CASE05 = REFERENCE_CASES / "case05_merging" / "test4_TxtOutputs.dat"
 
 
 class TestSinglePortFailure:
@@ -106,7 +106,7 @@ class TestShorelineHasNoEffect:
         from tests.conftest import ALL_DAT_PATHS
 
         for path in ALL_DAT_PATHS:
-            if path.name == "ModelResults_Macoma1.dat":
+            if path.name == "ModelResults_legacy1.dat":
                 continue  # header-only legacy artifact
             events = " ".join(read_dat(path).event_steps()).lower()
             assert "shore" not in events

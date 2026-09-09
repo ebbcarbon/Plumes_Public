@@ -67,7 +67,7 @@ Checked against every exe run we hold:
 | **case13** | **30°** | **0°** | **30°** | **0.8660** | **96.288** | **96.29** | ✅ |
 | shipped example | 30° | 0° | 30° | 0.8660 | 96.288 | **109.59** | ❌ |
 
-**Eight of nine.** Every Macoma case discharges parallel to the current, so the offset is
+**Eight of nine.** Every archived-diffuser case discharges parallel to the current, so the offset is
 zero, the cosine is 1, and the correction is invisible — which is precisely why the
 uncorrected `(n−1)·spacing + diameter` fitted all of them and hid this for so long.
 case13 is the only run at a non-zero offset produced by the current exe build.
@@ -85,7 +85,7 @@ separate them:
    Its header style is the 2026 form, so it is not the Dec-2025 build in case00, but there
    could be intermediate builds.
 2. **Chemistry being enabled changes the correction.** Chemistry was on for this run and
-   off for the shipped one. That would be strange, but no Macoma case can rule it out —
+   off for the shipped one. That would be strange, but no archived-diffuser case can rule it out —
    they all have a zero offset, where any cosine factor is 1.
 
 ### The experiment that separates them

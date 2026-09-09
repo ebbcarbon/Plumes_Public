@@ -1,6 +1,6 @@
 """Ambient interpolation, and what happens outside the tabulated range.
 
-The extrapolation tests carry the weight. Every Macoma project has a seabed 2 m below the
+The extrapolation tests carry the weight. Every archived-diffuser project has a seabed 2 m below the
 bottom of its ambient profile, and case09's transport broke after its plume rose above the
 top of the chemistry profile -- so the out-of-range policy is a real modelling decision
 rather than a corner case.
@@ -20,7 +20,7 @@ from plumes2.seawater import density
 from tests.conftest import ALL_PRJ_PATHS, REFERENCE_CASES
 
 
-def macoma_profile() -> AmbientProfile:
+def archive_profile() -> AmbientProfile:
     """case01's ambient, plus case03's chemistry and a two-level DO profile."""
     rows = [
         (0.0, 30.9, 11.2),
@@ -51,28 +51,28 @@ def macoma_profile() -> AmbientProfile:
 
 class TestInterpolation:
     def test_hits_tabulated_levels_exactly(self) -> None:
-        view = AmbientProfileView(macoma_profile())
+        view = AmbientProfileView(archive_profile())
         assert float(view.salinity(3.0)) == pytest.approx(31.2)
         assert float(view.temperature(15.0)) == pytest.approx(9.22)
 
     def test_midpoint_is_the_mean(self) -> None:
-        view = AmbientProfileView(macoma_profile())
+        view = AmbientProfileView(archive_profile())
         assert float(view.salinity(1.5)) == pytest.approx((30.9 + 31.2) / 2)
 
     def test_vectorises(self) -> None:
-        view = AmbientProfileView(macoma_profile())
+        view = AmbientProfileView(archive_profile())
         assert view.temperature([0.0, 3.0, 15.0]) == pytest.approx([11.2, 10.4, 9.22])
 
     def test_density_follows_from_salinity_and_temperature(self) -> None:
-        view = AmbientProfileView(macoma_profile())
+        view = AmbientProfileView(archive_profile())
         assert float(view.density(3.0)) == pytest.approx(float(density(31.2, 10.4)))
 
     def test_density_increases_with_depth_in_this_profile(self) -> None:
-        view = AmbientProfileView(macoma_profile())
+        view = AmbientProfileView(archive_profile())
         assert np.all(np.diff(view.density(np.linspace(0.0, 15.0, 31))) > 0)
 
     def test_sample_returns_every_field(self) -> None:
-        sample = AmbientProfileView(macoma_profile()).sample(3.0)
+        sample = AmbientProfileView(archive_profile()).sample(3.0)
         assert sample.depth == pytest.approx(3.0)
         assert sample.salinity == pytest.approx(31.2)
         assert sample.current_direction == pytest.approx(90.0)
@@ -83,22 +83,22 @@ class TestInterpolation:
 
 class TestExtrapolation:
     def test_clamp_is_the_default_and_holds_the_endpoint(self) -> None:
-        """The Macoma seabed sits 2 m below the profile, so this path is always taken."""
-        view = AmbientProfileView(macoma_profile())
+        """The archived diffuser's seabed is 2 m below the profile, so this path is always taken."""
+        view = AmbientProfileView(archive_profile())
         assert float(view.salinity(17.0)) == pytest.approx(31.9)
         assert float(view.salinity(-1.0)) == pytest.approx(30.9)
         assert view.extrapolation_seen
 
     def test_in_range_queries_do_not_flag_extrapolation(self) -> None:
-        view = AmbientProfileView(macoma_profile())
+        view = AmbientProfileView(archive_profile())
         view.salinity([0.0, 7.5, 15.0])
         assert not view.extrapolation_seen
 
     def test_sample_reports_extrapolation(self) -> None:
-        assert AmbientProfileView(macoma_profile()).sample(17.0).extrapolated
+        assert AmbientProfileView(archive_profile()).sample(17.0).extrapolated
 
     def test_linear_continues_the_gradient(self) -> None:
-        view = AmbientProfileView(macoma_profile(), policy=ExtrapolationPolicy.LINEAR)
+        view = AmbientProfileView(archive_profile(), policy=ExtrapolationPolicy.LINEAR)
         # The last gradient is (31.9 - 31.8) / 3 per metre.
         assert float(view.salinity(18.0)) == pytest.approx(31.9 + 0.1, abs=1e-9)
 
@@ -116,7 +116,7 @@ class TestExtrapolation:
         assert float(AmbientProfileView(steep).salinity(-2.0)) == pytest.approx(1.0)
 
     def test_raise_policy_refuses(self) -> None:
-        view = AmbientProfileView(macoma_profile(), policy=ExtrapolationPolicy.RAISE)
+        view = AmbientProfileView(archive_profile(), policy=ExtrapolationPolicy.RAISE)
         with pytest.raises(ValueError, match="outside the tabulated range"):
             view.salinity(17.0)
 
@@ -130,13 +130,13 @@ class TestExtrapolation:
 
 class TestChemistryAndOxygen:
     def test_alkalinity_and_dic_interpolate(self) -> None:
-        view = AmbientProfileView(macoma_profile())
+        view = AmbientProfileView(archive_profile())
         assert float(view.total_alkalinity(1.5)) == pytest.approx(2950.0)
         assert float(view.dic(3.0)) == pytest.approx(2475.0)
 
     def test_chemistry_clamps_above_its_top_level(self) -> None:
         """case09's plume rose above 1 m; clamping is what keeps that physical."""
-        view = AmbientProfileView(macoma_profile())
+        view = AmbientProfileView(archive_profile())
         assert float(view.total_alkalinity(0.0)) == pytest.approx(3000.0)
         assert float(view.total_alkalinity(-0.5)) == pytest.approx(3000.0)
 
@@ -159,7 +159,7 @@ class TestChemistryAndOxygen:
             AmbientProfileView(profile)._chem_lookup("ph", 2.0)
 
     def test_dissolved_oxygen_interpolates(self) -> None:
-        assert float(AmbientProfileView(macoma_profile()).dissolved_oxygen(7.5)) == pytest.approx(
+        assert float(AmbientProfileView(archive_profile()).dissolved_oxygen(7.5)) == pytest.approx(
             7.5
         )
 
@@ -182,11 +182,11 @@ class TestAgainstRealProjects:
             assert 1000.0 < sample.density < 1040.0
             assert sample.salinity >= 0.0
 
-    def test_macoma_seabed_is_below_the_profile_and_is_flagged(self) -> None:
+    def test_archive_seabed_is_below_the_profile_and_is_flagged(self) -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             case = load_project(
-                REFERENCE_CASES / "case03_macoma_carbonate" / "test.prj", warn_on_drift=False
+                REFERENCE_CASES / "case03_carbonate" / "test.prj", warn_on_drift=False
             ).to_case()
         view = AmbientProfileView(case.ambient)
         assert case.diffuser.bottom_depth == pytest.approx(17.0)

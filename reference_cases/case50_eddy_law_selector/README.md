@@ -1,6 +1,6 @@
 # case50 — the far-field eddy-diffusivity selector, decoded, and a manual typo the port had copied (2026-08-26)
 
-Two runs of one project — Ebb's default profile (case03's Macoma configuration) without chemistry,
+Two runs of one project — Ebb's default profile (case03's configuration) without chemistry,
 output interval 1 — under the exe's two **non-default** far-field laws. Every archived far field
 before this one had used the `4/3 power law` default, so which `.prj` field stores the selection,
 what the header prints for the other two laws, and whether the exe's constant and linear laws are

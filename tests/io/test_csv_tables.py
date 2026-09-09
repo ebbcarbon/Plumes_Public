@@ -91,13 +91,13 @@ class TestValues:
         assert table.column("dispersion_alpha") == pytest.approx([3e-4] * 7)
 
     def test_case_column_parsed(self) -> None:
-        table = read_csv_table(REFERENCE_CASES / "case01_macoma_cms" / "macoma2diffuser.csv")
+        table = read_csv_table(REFERENCE_CASES / "case01_cms" / "diffuser.csv")
         assert table.rows[0].enabled is True
         assert [row.enabled for row in table.rows[1:]] == [False] * 19
         assert len(table.active_rows()) == 1
 
     def test_effluent_has_eight_stored_flow_cases(self) -> None:
-        table = read_csv_table(REFERENCE_CASES / "case01_macoma_cms" / "macoma2effluent.csv")
+        table = read_csv_table(REFERENCE_CASES / "case01_cms" / "effluent.csv")
         assert len(table.used_rows()) == 8
         assert len(table.active_rows()) == 1
         assert table.active_rows()[0].values[0] == pytest.approx(0.005)
@@ -106,7 +106,7 @@ class TestValues:
 class TestBlankFields:
     def test_ambient_chem_ph_column_is_blank_not_zero(self) -> None:
         """case03 leaves pH blank; that is how we know the exe derives it."""
-        table = read_csv_table(REFERENCE_CASES / "case03_macoma_carbonate" / "testco2.csv")
+        table = read_csv_table(REFERENCE_CASES / "case03_carbonate" / "testco2.csv")
         first = table.rows[0]
         assert first.values[0] == pytest.approx(1.0)  # depth
         assert first.values[1] == pytest.approx(3000.0)  # TA
@@ -115,7 +115,7 @@ class TestBlankFields:
         assert first.values[4] == pytest.approx(100.0)  # Ca
 
     def test_blank_survives_a_roundtrip(self, tmp_path: Path) -> None:
-        path = REFERENCE_CASES / "case03_macoma_carbonate" / "testco2.csv"
+        path = REFERENCE_CASES / "case03_carbonate" / "testco2.csv"
         out = tmp_path / "chem.csv"
         write_csv_table(read_csv_table(path), out)
         assert out.read_bytes() == path.read_bytes()

@@ -14,12 +14,12 @@ import pytest
 from plumes2.io.dat import DatFormatError, parse_dat, read_dat
 from tests.conftest import ALL_DAT_PATHS, EXAMPLE_PROJECT, REFERENCE_CASES
 
-CASE00 = REFERENCE_CASES / "case00_macoma_legacy_fps" / "ModelResults_Macoma1.dat"
-CASE01 = REFERENCE_CASES / "case01_macoma_cms" / "ModelResults_TxtOutputs.dat"
-CASE02 = REFERENCE_CASES / "case02_macoma_mgd" / "Macomatest1.dat"
-CASE03 = REFERENCE_CASES / "case03_macoma_carbonate" / "test2_TxtOutputs.dat"
-CASE05 = REFERENCE_CASES / "case05_macoma_merging" / "test4_TxtOutputs.dat"
-CASE06 = REFERENCE_CASES / "case06_macoma_arag_s36" / "test5_TxtOutputs.dat"
+CASE00 = REFERENCE_CASES / "case00_legacy_fps" / "ModelResults_legacy1.dat"
+CASE01 = REFERENCE_CASES / "case01_cms" / "ModelResults_TxtOutputs.dat"
+CASE02 = REFERENCE_CASES / "case02_mgd" / "test1.dat"
+CASE03 = REFERENCE_CASES / "case03_carbonate" / "test2_TxtOutputs.dat"
+CASE05 = REFERENCE_CASES / "case05_merging" / "test4_TxtOutputs.dat"
+CASE06 = REFERENCE_CASES / "case06_arag_s36" / "test5_TxtOutputs.dat"
 EXAMPLE = EXAMPLE_PROJECT / "ModelResults_TxtOutputs.dat"
 
 #: case00 is a header-only artifact from an older build with no step rows, so it

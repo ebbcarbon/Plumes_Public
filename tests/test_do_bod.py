@@ -34,7 +34,7 @@ from plumes2.io.project import load_project
 from plumes2.results import CHEMISTRY_COLUMNS, OXYGEN_COLUMNS, run
 from tests.conftest import REFERENCE_CASES
 
-CASE24 = REFERENCE_CASES / "case24_macoma_dissolved_oxygen"
+CASE24 = REFERENCE_CASES / "case24_dissolved_oxygen"
 
 #: The effluent DO tab for test37-test40, user-supplied -- the `.prj` cannot carry it (§7b), so
 #: without this the traces are uninterpretable. See the case README.
@@ -191,7 +191,7 @@ def test_a_mismatched_or_impossible_input_is_refused() -> None:
 
 @pytest.fixture(scope="module")
 def oxygen_case():  # type: ignore[no-untyped-def]
-    """The Macoma baseline with both DO endmembers, built once for the module.
+    """The archived-diffuser baseline with both DO endmembers, built once for the module.
 
     A cheap single-port variant, because these tests are about the oxygen column rather than the
     hydrodynamics -- and an integration costs the same whatever `samples` asks for.
@@ -261,7 +261,7 @@ def test_the_case_refuses_to_compute_oxygen_without_an_endmember() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         base = load_project(
-            REFERENCE_CASES / "case01_macoma_cms" / "Macoma2.prj", warn_on_drift=False
+            REFERENCE_CASES / "case01_cms" / "project.prj", warn_on_drift=False
         ).to_case()
     assert not base.oxygen_enabled
     with pytest.raises(ValueError, match="no effluent DO endmember"):
@@ -321,8 +321,14 @@ def test_a_factor_below_one_is_refused() -> None:
     """Brooks' factor is 1 at the transition; below it would mean the far field un-mixed."""
     with pytest.raises(ValueError, match="1 at the transition"):
         far_field_oxygen(
-            EffluentDO(dissolved_oxygen=2.0), 8.0, 0.0, 0.0, 6.0, 100.0,
-            np.array([0.5]), np.array([0.0]),
+            EffluentDO(dissolved_oxygen=2.0),
+            8.0,
+            0.0,
+            0.0,
+            6.0,
+            100.0,
+            np.array([0.5]),
+            np.array([0.0]),
         )
 
 
@@ -352,8 +358,12 @@ FAR_FIELD_TRACES = [
     (CASE27 / "ModelResults_2.dat", EffluentDO(**_NEW, cbod_decay=0.23), 0.0, 0.01),
     (CASE27 / "ModelResults_4.dat", EffluentDO(**_NEW, cbod_decay=0.23), 0.0, 0.02),
     (CASE27 / "ModelResults_6.dat", EffluentDO(**_NEW, cbod_decay=0.23), 0.0, 0.03),
-    (CASE27 / "ModelResults_7.dat",
-     EffluentDO(nbod5=30.0, nbod_decay=0.1, cbod5=1000.0, cbod_decay=5.0), 0.0, 3.4),
+    (
+        CASE27 / "ModelResults_7.dat",
+        EffluentDO(nbod5=30.0, nbod_decay=0.1, cbod5=1000.0, cbod_decay=5.0),
+        0.0,
+        3.4,
+    ),
 ]
 
 
@@ -374,8 +384,10 @@ def _far_field_inputs(path):
 
 @pytest.mark.parametrize(
     ("path", "effluent", "ambient_cbod5", "tolerance"),
-    [pytest.param(*case, id=f"{case[0].parent.name[:6]}-{case[0].stem[-1]}")
-     for case in FAR_FIELD_TRACES],
+    [
+        pytest.param(*case, id=f"{case[0].parent.name[:6]}-{case[0].stem[-1]}")
+        for case in FAR_FIELD_TRACES
+    ],
 )
 def test_the_exe_far_field_is_reproduced_with_no_dilution_of_the_demand(
     path, effluent: EffluentDO, ambient_cbod5: float, tolerance: float
@@ -386,7 +398,14 @@ def test_the_exe_far_field_is_reproduced_with_no_dilution_of_the_demand(
     """
     dilution, transition, factor, days, printed = _far_field_inputs(path)
     ours = far_field_oxygen(
-        effluent, 8.0, ambient_cbod5, 0.0, transition, dilution, factor, days,
+        effluent,
+        8.0,
+        ambient_cbod5,
+        0.0,
+        transition,
+        dilution,
+        factor,
+        days,
         reproduce_undiluted_bod=True,
     )
     assert np.max(np.abs(ours - printed)) < tolerance
@@ -407,7 +426,14 @@ def test_the_missing_dilution_is_what_reproduces_the_traces() -> None:
         dilutions.append(dilution)
         for reproduce, into in ((True, spread_exe), (False, spread_manual)):
             ours = far_field_oxygen(
-                effluent, 8.0, 0.0, 0.0, transition, dilution, factor, days,
+                effluent,
+                8.0,
+                0.0,
+                0.0,
+                transition,
+                dilution,
+                factor,
+                days,
                 reproduce_undiluted_bod=reproduce,
             )
             into.append(float(np.max(np.abs(ours - printed))))
@@ -426,7 +452,14 @@ def test_the_defect_drives_the_exe_to_negative_oxygen() -> None:
     effluent = EffluentDO(cbod5=1000.0, cbod_decay=5.0, nbod5=30.0, nbod_decay=0.1)
     dilution, transition, factor, days, printed = _far_field_inputs(CASE27 / "ModelResults_7.dat")
     ours = far_field_oxygen(
-        effluent, 8.0, 0.0, 0.0, transition, dilution, factor, days,
+        effluent,
+        8.0,
+        0.0,
+        0.0,
+        transition,
+        dilution,
+        factor,
+        days,
         reproduce_undiluted_bod=True,
     )
     assert printed.min() < -180.0, "the archived trace really does print negative oxygen"
@@ -434,7 +467,14 @@ def test_the_defect_drives_the_exe_to_negative_oxygen() -> None:
 
     # And the corrected form stays physical on the very same inputs, which is the point of the flag.
     corrected = far_field_oxygen(
-        effluent, 8.0, 0.0, 0.0, transition, dilution, factor, days,
+        effluent,
+        8.0,
+        0.0,
+        0.0,
+        transition,
+        dilution,
+        factor,
+        days,
     )
     assert corrected.min() > 0.0
 
@@ -449,7 +489,14 @@ def test_the_ambient_demand_is_converted_to_ultimate_before_it_is_subtracted() -
     dilution, transition, factor, days, printed = _far_field_inputs(CASE25 / "ModelResults_3.dat")
     effluent = EffluentDO(**_OLD, cbod_decay=0.23)
     converted = far_field_oxygen(
-        effluent, 8.0, 500.0, 0.0, transition, dilution, factor, days,
+        effluent,
+        8.0,
+        500.0,
+        0.0,
+        transition,
+        dilution,
+        factor,
+        days,
         reproduce_undiluted_bod=True,
     )
     assert np.max(np.abs(converted - printed)) < 0.11
@@ -457,8 +504,15 @@ def test_the_ambient_demand_is_converted_to_ultimate_before_it_is_subtracted() -
     # The alternative: subtract the 5-day figure as typed. `ultimate_bod` at this rate is 1.4634x,
     # so passing the pre-divided value reproduces "no conversion" exactly.
     raw = far_field_oxygen(
-        effluent, 8.0, 500.0 * (1.0 - math.exp(-0.23 * BOD5_DAYS)), 0.0,
-        transition, dilution, factor, days, reproduce_undiluted_bod=True,
+        effluent,
+        8.0,
+        500.0 * (1.0 - math.exp(-0.23 * BOD5_DAYS)),
+        0.0,
+        transition,
+        dilution,
+        factor,
+        days,
+        reproduce_undiluted_bod=True,
     )
     assert np.max(np.abs(raw - printed)) > 2.5
 
@@ -519,7 +573,14 @@ def test_the_far_field_ambient_is_taken_at_the_trapping_depth() -> None:
 
     def residual(ambient_oxygen: float, **kwargs: bool) -> float:
         ours = far_field_oxygen(
-            effluent, ambient_oxygen, 0.0, 0.0, transition, dilution, factor, days,
+            effluent,
+            ambient_oxygen,
+            0.0,
+            0.0,
+            transition,
+            dilution,
+            factor,
+            days,
             reproduce_undiluted_bod=kwargs.get("undiluted", True),
         )
         return float(np.max(np.abs(ours - printed)))
@@ -546,7 +607,14 @@ def test_a_fast_rate_identifies_itself_from_the_curve() -> None:
     def residual(rate: float) -> float:
         effluent = EffluentDO(dissolved_oxygen=2.0, **_NEW, cbod_decay=rate)
         ours = far_field_oxygen(
-            effluent, 8.0, 0.0, 0.0, transition, dilution, factor, days,
+            effluent,
+            8.0,
+            0.0,
+            0.0,
+            transition,
+            dilution,
+            factor,
+            days,
             reproduce_undiluted_bod=True,
         )
         return float(np.max(np.abs(ours - printed)))
@@ -592,6 +660,7 @@ def test_the_far_field_ambient_is_the_trapping_depth_value_not_the_depth_mean(
     this measures eq 30's `DO_a` and nothing else -- which is why the same number comes out under
     conditions that differ by 87x in decay rate and 100 mg/L in IDOD.
     """
+
     def at_500(name: str) -> float:
         far = read_dat(CASE28 / name).farfield
         distance = far["Distance"].to_numpy(dtype=float)
@@ -679,8 +748,15 @@ def test_idod_does_not_appear_a_second_time_in_the_far_field() -> None:
     effluent = EffluentDO(dissolved_oxygen=2.0, idod=100.0, **_NEW, cbod_decay=0.23)
 
     ours = far_field_oxygen(
-        effluent, 8.0, 0.0, 0.0, float(near["DO"].iloc[-1]), dilution,
-        factor, far["Time"].to_numpy(dtype=float) / 24.0, reproduce_undiluted_bod=True,
+        effluent,
+        8.0,
+        0.0,
+        0.0,
+        float(near["DO"].iloc[-1]),
+        dilution,
+        factor,
+        far["Time"].to_numpy(dtype=float) / 24.0,
+        reproduce_undiluted_bod=True,
     )
     opening = factor == 1.0
     assert opening.sum() == 13, "the far field opens with 13 rows before Brooks spreading begins"
@@ -700,14 +776,10 @@ def test_the_typed_rate_is_used_as_typed() -> None:
     as_typed = far_field_oxygen(effluent, *common, reproduce_undiluted_bod=True)
     assert np.max(np.abs(as_typed - printed)) < 0.08
 
-    at_twenty = far_field_oxygen(
-        effluent, *common, temperature=20.0, reproduce_undiluted_bod=True
-    )
+    at_twenty = far_field_oxygen(effluent, *common, temperature=20.0, reproduce_undiluted_bod=True)
     assert at_twenty == pytest.approx(as_typed), "eqs 26-27 are the identity at 20 degrees"
 
-    corrected = far_field_oxygen(
-        effluent, *common, temperature=12.0, reproduce_undiluted_bod=True
-    )
+    corrected = far_field_oxygen(effluent, *common, temperature=12.0, reproduce_undiluted_bod=True)
     assert np.max(np.abs(corrected - printed)) > 0.2, "a theta correction would spoil the fit"
 
 

@@ -1,0 +1,76 @@
+description: 'Macoma site, acute ambient (0.02 m/s): 25 x 0.0127 m ports at 2 ft,
+  5900 L/h of intake water (S 30.9 / T 11.2) at TA 6000 / DIC 2092, ambient TA 2146
+  / DIC 2092 uniform, MZ 20.7 / 207 ft'
+diffuser:
+  port_diameter: 0.0127
+  port_elevation: 15.0
+  vertical_angle: 45.0
+  horizontal_angle: 90.0
+  n_ports: 25
+  port_spacing: 0.6096
+  port_depth: 2.0
+effluent:
+  flow: 0.001638888888888889
+  salinity: 30.9
+  temperature: 11.2
+mixing_zone:
+  acute_distance: 6.30936
+  chronic_distance: 63.0936
+ambient:
+  levels:
+  - depth: 0.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 30.9
+    temperature: 11.2
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 3.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.2
+    temperature: 10.4
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 6.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.2
+    temperature: 9.69
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 9.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.7
+    temperature: 9.44
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 12.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.8
+    temperature: 9.34
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  - depth: 15.0
+    current_speed: 0.02
+    current_direction: 90.0
+    salinity: 31.9
+    temperature: 9.22
+    farfield_speed: 0.02
+    farfield_direction: 90.0
+  chemistry:
+  - depth: 0.0
+    total_alkalinity: 2146.0
+    dic: 2092.0
+    calcium: 100.0
+  - depth: 17.0
+    total_alkalinity: 2146.0
+    dic: 2092.0
+    calcium: 100.0
+near_field:
+  max_rise_or_fall: 3
+effluent_chemistry:
+  total_alkalinity: 6000.0
+  dic: 2092.0

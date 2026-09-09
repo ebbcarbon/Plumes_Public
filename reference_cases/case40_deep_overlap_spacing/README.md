@@ -5,12 +5,12 @@
 Run 2026-08-20 to answer two questions the archive could not: what merging does **past `d/L` ≈ 2**,
 and whether the effective-spacing law survives an angle sweep where *only* the angle moves.
 
-`Macoma2.prj` is archived with them and **round-trips byte-exactly**, as do all seven `.dat` files.
+`project.prj` is archived with them and **round-trips byte-exactly**, as do all seven `.dat` files.
 It describes `test56` — the 2 m base — and every other run changes one field from it.
 
 Base: **25 ports**, 0.0127 m port diameter, 0.005 m³/s total, **2.0 m port depth**, 45° vertical,
 90° horizontal into a **90° current at 0.02 m/s**, effluent **2 psu / 10 °C** into the ~31 psu
-Macoma ambient, contraction 0.61, aspiration 0.1, output interval 1, `stop at surface` **off**.
+case03 ambient, contraction 0.61, aspiration 0.1, output interval 1, `stop at surface` **off**.
 
 | run | spacing | H-angle | merges | finite rows | max `d/L` |
 |---|---|---|---|---|---|
@@ -92,3 +92,7 @@ weakly buoyant effluent at a tight spacing** — 35 psu at `L` = 0.5 m and 0.25 
 rows**, worst difference 0.0, while their bytes differ — the diffuser echo prints the spacing. Same
 result as case20's test31/test33 at 2 m vs 5 m, and the same "the file changes, the numbers do not"
 pattern as rows 191l and 191o.
+
+## Names (2026-09-09)
+
+The exe wrote these files under the names on the left; renamed the same day, contents byte-identical (the `.dat` header still echoes the original project title): `Macoma2.prj` → `project.prj`, `macoma2ambient.csv` → `ambient.csv`, `macoma2diffuser.csv` → `diffuser.csv`, `macoma2effluent.csv` → `effluent.csv`, `macoma2mixzone.csv` → `mixzone.csv`.

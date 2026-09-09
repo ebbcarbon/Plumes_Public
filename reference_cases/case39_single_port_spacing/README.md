@@ -34,9 +34,9 @@ model; the plume merges with itself anyway.
 own instructions to model a single port will get an entrainment suppression they did not ask for
 and cannot switch off — worth **2.3× to 6×** in dilution growth rate (row 191n).
 
-## The Macoma control set, and why it could not answer
+## The archived-diffuser control set, and why it could not answer
 
-`macoma_test51`–`55` sweep spacing 2 / 5 / 1000 m at 25 and 1 ports on the Macoma2 geometry, and
+`test51`–`55` sweep spacing 2 / 5 / 1000 m at 25 and 1 ports on the archived-diffuser geometry, and
 they show the *other* half of the same fact: with 25 ports, spacing 5 and 1000 m are numerically
 identical; with 1 port, spacing 2, 5 and 1000 m are identical. **13 columns × 5001 rows, worst
 difference 0.0** in both groups.
@@ -54,3 +54,7 @@ the spacing prevented it. They are kept as the null control they are.
 Rows 191b/h/i's three regimes stand, and the degenerate-input explanation for them is gone. The
 rule is unconditional; what remains unexplained is only **when** the banner lands, which is where
 this investigation was before case39 and is now the whole of it.
+
+## Names (2026-09-09)
+
+The exe wrote these files under the names on the left; renamed the same day, contents byte-identical (the `.dat` header still echoes the original project title): `macoma_test51.dat` → `test51.dat`, `macoma_test52.dat` → `test52.dat`, `macoma_test53.dat` → `test53.dat`, `macoma_test54.dat` → `test54.dat`, `macoma_test55.dat` → `test55.dat`.

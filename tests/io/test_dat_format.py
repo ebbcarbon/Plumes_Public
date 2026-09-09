@@ -27,9 +27,7 @@ _NUMERIC = re.compile(r"^\s*(?:-?\d+\.?\d*|NaN)(\s|$)", re.IGNORECASE)
 
 
 def _traces() -> list[Path]:
-    found = sorted(ROOT.glob("reference_cases/**/*.dat")) + sorted(
-        ROOT.glob("upstream/**/*.dat")
-    )
+    found = sorted(ROOT.glob("reference_cases/**/*.dat")) + sorted(ROOT.glob("upstream/**/*.dat"))
     assert found, "no reference traces found"
     return found
 
@@ -189,11 +187,7 @@ _BANNER = re.compile(r"^[-.]{4,} (?P<text>\S.*?) [-.]{4,}$")
 
 def _fields(line: str) -> list[str]:
     """Split a header line into its ten-column fields, dropping the blanks."""
-    return [
-        field
-        for field in (line[j : j + 10].strip() for j in range(0, len(line), 10))
-        if field
-    ]
+    return [field for field in (line[j : j + 10].strip() for j in range(0, len(line), 10)) if field]
 
 
 def _special_lines():  # type: ignore[no-untyped-def]
@@ -369,7 +363,12 @@ def test_every_archived_trace_round_trips_byte_for_byte() -> None:
     # 196 -> 204 on 2026-09-01: case51's eight flag-decode traces (legacy build, interval 5,
     # generated column order) -- all eight unchanged through the writer.
     # 204 -> 206 the same evening: case52's bottom-stop pair, again unchanged.
-    assert checked == 206, checked
+    # 206 -> 209 on 2026-09-02: case53's shoreline pair (byte-identical twins, so two files and
+    # one distinct content) and case54's subcritical_sinks -- all three generated column order,
+    # all three unchanged through the writer.
+    # 209 -> 211 on 2026-09-09: case55's two site arms (current build, chemistry on, interval 5,
+    # feet-flagged diffuser echo) -- both unchanged through the writer.
+    assert checked == 211, checked
     assert pending >= 0  # kept explicit so the split above cannot be silently dropped
 
 
@@ -382,11 +381,9 @@ def test_the_truncated_terminating_row_is_not_padded_back_out() -> None:
     """
     from plumes2.io.dat import read_dat
 
-    dat = read_dat(ROOT / "reference_cases" / "case05_macoma_merging" / "test4_TxtOutputs.dat")
+    dat = read_dat(ROOT / "reference_cases" / "case05_merging" / "test4_TxtOutputs.dat")
     widths = {
-        width
-        for (table, _), width in dat.row_widths.items()
-        if table == "Simulation Results"
+        width for (table, _), width in dat.row_widths.items() if table == "Simulation Results"
     }
     assert len(widths) > 1, "this case must contain a short row for the test to mean anything"
     assert min(widths) < max(widths)

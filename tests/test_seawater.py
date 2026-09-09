@@ -29,7 +29,7 @@ from plumes2.seawater import (
 )
 from tests.conftest import REFERENCE_CASES
 
-CASE01 = REFERENCE_CASES / "case01_macoma_cms" / "ModelResults_TxtOutputs.dat"
+CASE01 = REFERENCE_CASES / "case01_cms" / "ModelResults_TxtOutputs.dat"
 
 
 class TestUnescoCheckValues:
@@ -209,9 +209,9 @@ def _cheap_eos_case():  # type: ignore[no-untyped-def]
     """A single-port, low-flow case -- the same shape `conftest.cheap_run` uses."""
     from plumes2.io.project import load_project
 
-    base = load_project(
-        REFERENCE_CASES / "case18_zero_current_pair" / "test21.prj"
-    ).to_case(row_index=0)
+    base = load_project(REFERENCE_CASES / "case18_zero_current_pair" / "test21.prj").to_case(
+        row_index=0
+    )
     return base.model_copy(
         update={
             "diffuser": base.diffuser.model_copy(update={"n_ports": 1}),
@@ -249,10 +249,7 @@ class TestKnudsenIsTheExesEquationOfState:
         """
         for salinity in (0.0, 10.0, 35.0, 45.0):
             sigma_zero = (
-                -0.093
-                + 0.8149 * salinity
-                - 0.000482 * salinity**2
-                + 0.0000068 * salinity**3
+                -0.093 + 0.8149 * salinity - 0.000482 * salinity**2 + 0.0000068 * salinity**3
             )
             assert float(knudsen_sigma_t(salinity, 0.0)) == pytest.approx(sigma_zero, abs=5e-5)
 

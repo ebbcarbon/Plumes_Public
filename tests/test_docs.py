@@ -53,7 +53,7 @@ def test_the_landing_pages_worked_example_runs() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         case = load_project(
-            REFERENCE_CASES / "case01_macoma_cms" / "Macoma2.prj", warn_on_drift=False
+            REFERENCE_CASES / "case01_cms" / "project.prj", warn_on_drift=False
         ).to_case()
     results = run(case, samples=8)
 
@@ -65,9 +65,7 @@ def test_the_landing_page_lists_every_subpackage() -> None:
     """Its module table is the map a new reader navigates by, so it may not omit one."""
     documented = plumes2.__doc__ or ""
     subpackages = {
-        info.name
-        for info in pkgutil.walk_packages(plumes2.__path__, "plumes2.")
-        if info.ispkg
+        info.name for info in pkgutil.walk_packages(plumes2.__path__, "plumes2.") if info.ispkg
     }
     for package in subpackages:
         assert f"`{package}`" in documented, f"{package} is missing from the landing page's table"

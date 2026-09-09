@@ -1,10 +1,10 @@
 # case15 — old build, 45° horizontal angle: merging and width are separate corrections
 
 Two runs on the **older exe build** (the one without the carbonate module), on the baseline
-Macoma project: `test14.dat` at the usual 90° horizontal angle, and `test15.dat` with it
+archived-diffuser project: `test14.dat` at the usual 90° horizontal angle, and `test15.dat` with it
 set to **45°**. Nothing else changed.
 
-`test14.dat` turns out to be **bit-identical to [case01](../case01_macoma_cms/)** — same
+`test14.dat` turns out to be **bit-identical to [case01](../case01_cms/)** — same
 84 rows, same events, dilution 387.996 — which incidentally tells us case01 was produced by
 this older build too. It is kept here as the matched control for test15.
 

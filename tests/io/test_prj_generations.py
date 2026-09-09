@@ -1,6 +1,6 @@
 """The `.prj` format varies between exe builds.
 
-`reference_cases/case00_macoma_legacy_fps/Macoma.prj` (Dec 2025) writes one near-field
+`reference_cases/case00_legacy_fps/project.prj` (Dec 2025) writes one near-field
 plot flag where every 2026 file writes four. Reading both plot blocks greedily up to
 the next text record handles both, and these tests pin that plus the unit-flag mapping
 that the case00 `.prj`/`.dat` pair decoded.
@@ -14,9 +14,9 @@ from plumes2.io.dat import read_dat
 from plumes2.io.prj import read_prj
 from tests.conftest import REFERENCE_CASES, UPSTREAM
 
-LEGACY_PRJ = REFERENCE_CASES / "case00_macoma_legacy_fps" / "Macoma.prj"
-LEGACY_DAT = REFERENCE_CASES / "case00_macoma_legacy_fps" / "ModelResults_Macoma1.dat"
-MODERN_PRJ = REFERENCE_CASES / "case01_macoma_cms" / "Macoma2.prj"
+LEGACY_PRJ = REFERENCE_CASES / "case00_legacy_fps" / "project.prj"
+LEGACY_DAT = REFERENCE_CASES / "case00_legacy_fps" / "ModelResults_legacy1.dat"
+MODERN_PRJ = REFERENCE_CASES / "case01_cms" / "project.prj"
 FEET = 0.3048
 
 
@@ -90,25 +90,35 @@ class TestUnitFlagDecode:
         """case01 stores 0.005 with flag 2 and its .dat header says (cms)."""
         prj = read_prj(MODERN_PRJ)
         assert prj.effluent.unit_flags == [1, 2, 1, 1, 1]
-        dat = REFERENCE_CASES / "case01_macoma_cms" / "ModelResults_TxtOutputs.dat"
+        dat = REFERENCE_CASES / "case01_cms" / "ModelResults_TxtOutputs.dat"
         assert "(cms)" in dat.read_bytes().decode("ascii")
         example = UPSTREAM / "Example_project" / "ModelResults_TxtOutputs.dat"
         assert "(MGD)" in example.read_bytes().decode("ascii")
 
 
 class TestShorelineIsStillInert:
-    def test_no_prj_in_the_repo_has_a_nonzero_shoreline_vector(self) -> None:
-        """The runs that set one were never saved, so the convention stays unknown."""
+    def test_only_case53_carries_a_nonzero_shoreline_vector(self) -> None:
+        """case53's pair decoded the convention: a typed "60 deg, 5 m" stores [distance, bearing].
+
+        This test asserted `[0.0, 0.0]` on every project until 2026-09-02 ("the runs that set one
+        were never saved, so the convention stays unknown"). Both halves retired together: the
+        pair was run to set exactly one shoreline vector, its as-run projects are the archive's
+        first two carrying one, and their `5.0, 60.0` is what identifies the order (row 284b).
+        Everything else in the repo still carries zero. (No flag-3 guard here: case51's
+        `recon_nf3.prj` is a deliberate never-run flip, archived as evidence with a zero vector.)
+        """
         from tests.conftest import ALL_PRJ_PATHS
 
         for path in ALL_PRJ_PATHS:
-            assert read_prj(path).shoreline == [0.0, 0.0], path
+            prj = read_prj(path)
+            if path.parent.name == "case53_shoreline_stop":
+                assert prj.shoreline == [5.0, 60.0], path
+            else:
+                assert prj.shoreline == [0.0, 0.0], path
 
     def test_enabled_shoreline_run_still_ends_on_trapping(self) -> None:
         """case12: checkbox on, 60 degrees, 5 m -- and the plume travels to y = 5.389 m."""
-        dat = read_dat(
-            REFERENCE_CASES / "case12_macoma_shoreline_enabled" / "test13_TxtOutputs.dat"
-        )
+        dat = read_dat(REFERENCE_CASES / "case12_shoreline_enabled" / "test13_TxtOutputs.dat")
         assert dat.final_step == 400
         assert set(dat.event_steps()) == {"Local maximum rise or fall", "Plume traps"}
         assert dat.nearfield["y-posn"].max() == pytest.approx(5.389)

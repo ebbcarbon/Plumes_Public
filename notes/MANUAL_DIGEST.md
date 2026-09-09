@@ -130,7 +130,7 @@ BOD's effect during initial dilution is neglected; IDOD is not.
 
 **`port depth + port elevation = water depth at the diffuser`** — stated explicitly, and
 what we had already derived from case10's bottom hit. The manual adds that the *ambient*
-profile may be taken at a different, **deeper** location, which partly excuses the Macoma
+profile may be taken at a different, **deeper** location, which partly excuses the archived
 projects' 17 m seabed against a 15 m profile (though theirs is shallower, not deeper).
 
 Stated constraints: port depth **cannot be zero** (no surface discharges); port elevation

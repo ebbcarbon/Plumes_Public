@@ -30,7 +30,7 @@ def _case03_dosed() -> Case:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         base = load_project(
-            REFERENCE_CASES / "case03_macoma_carbonate" / "test.prj", warn_on_drift=False
+            REFERENCE_CASES / "case03_carbonate" / "test.prj", warn_on_drift=False
         ).to_case()
         dosed = base.model_copy(
             update={"effluent_chemistry": EffluentChemistry(total_alkalinity=4000.0, ph=10.5)}

@@ -35,6 +35,7 @@ dependencies = [
     "pyyaml>=6.0",       # native YAML case files
     "pydantic>=2.9",     # input validation (physical ranges, monotonic profiles)
     "PyCO2SYS>=1.8.3",   # carbonate speciation; constant selections tracked explicitly
+    "pypdf>=4.0",        # in-document links and bookmarks in the PDF report (2026-09-09)
 ]
 
 [project.optional-dependencies]
@@ -77,6 +78,9 @@ packages = ["src/plumes2"]
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+# The tests import `tests.conftest`; the repo root has to be importable however pytest is
+# launched. `python -m pytest` adds the working directory itself, the `pytest` entry point does not.
+pythonpath = ["."]
 addopts = "-ra --strict-markers"
 markers = [
     "golden: validates against a .dat produced by the upstream exe",

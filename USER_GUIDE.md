@@ -13,8 +13,12 @@ field, default, flag or column that changes in the code fails the suite until th
 If a table here and the code ever disagree, the test run will say so — trust the failing test.
 
 Conventions: **SI everywhere** (metres, m³/s, °C, psu, µmol/kg, seconds) unless a column name says
-otherwise. Depths are positive down. Angles are degrees. Defaults in the tables are written the way
-YAML reads them: `true` / `false`, `null` for "not given", `required` for "you must supply it".
+otherwise. Depths are positive down. Angles are degrees. Horizontal directions (`horizontal_angle`,
+`current_direction`, `farfield_direction`) are **counter-clockwise from the model's +x axis**, as the
+PLUMES manual defines them; the model has no compass, so `x` / `y` in the outputs and the report
+are that frame, not east and north — orient it to the site yourself. Defaults in the tables are
+written the way YAML reads them: `true` / `false`, `null` for "not given", `required` for "you
+must supply it".
 
 ---
 
@@ -81,35 +85,78 @@ Prints: the near-field end time and termination reason, the final flux-averaged 
 depth, the centreline dilution with the peak-to-mean, the plume diameter, and — with chemistry —
 the pH and Ω_brucite at the port and the end, plus a `note:` if brucite went supersaturated.
 
-### `plumes2 report` — one self-contained HTML page
+### `plumes2 report` — one report, a PDF by default
 
 ```powershell
 plumes2 report CASE
-plumes2 report CASE -o out\report.html --samples 300 --units US
+plumes2 report CASE -o out\report.pdf --samples 300 --units US
+plumes2 report CASE -o out\report.html
 plumes2 report TRACE.dat --case-file CASE.yaml
+plumes2 report CASE --gradient-dir out\figures
 ```
 
 | flag | meaning | default |
 |---|---|---|
 | `CASE` | a `.prj` or `.yaml` to run, **or a `.dat` the exe already wrote** | required |
-| `-o FILE`, `--out FILE` | output file | `<CASE with extension replaced by .report.html>` |
+| `-o FILE`, `--out FILE` | output file; **the suffix picks the format**, `.pdf` or `.html` | `<CASE with extension replaced by .report.pdf>` |
 | `--samples N` | rows, as for `run` (ignored for a `.dat`) | `200` |
 | `--units SI|US` | display units | `SI` |
 | `--case-file PATH` | **for a `.dat` only**: the `.prj` or `.yaml` behind it, which unlocks the carbonate secondaries (pCO₂, CO₃²⁻, HCO₃⁻, Ω_brucite) the exe never printed | none |
+| `--gradient-dir DIR` | also write standalone pH / aragonite / calcite / brucite **gradient figures** (PNG + SVG) into `DIR`; needs chemistry, so a bare `.dat` needs `--case-file` too | none |
 
-The page is inline SVG plus an inline stylesheet — no JavaScript, no external reference — so it
-opens from the file alone. Up to eleven panels, each skipped rather than drawn empty.
+The PDF is US Letter, one section per panel — heading, explanation, figure, notes, and the table of
+values — with selectable text and vector figures, typeset with matplotlib; it needs nothing but a
+PDF reader. Its contents rows are links to their sections and the same entries form the document's
+bookmarks (the outline in a viewer's sidebar), added by `pypdf` after the pages are written. The HTML variant is inline SVG plus an inline stylesheet — no JavaScript, no external
+reference — so it opens from the file alone. In either, panels are skipped rather than drawn empty.
+
+**The receiving water first.** A report on a case (a run, or a `.dat` with `--case-file`) opens with
+two panels of the ambient profiles the plume was integrated into, depth down the page: temperature,
+salinity, the model's density, the near- and far-field currents and their directions; and, when the
+case carries chemistry, the entered TA and DIC with the pH, aragonite and brucite saturation solved
+from them at each row. The port, the seabed and the trapping depth are drawn across every column, and
+the stretch below the profile's last row is shaded. A bare `.dat` has no case, so it gets neither.
+
+**Surfacing plumes.** With `stop_at_surface` off the model integrates on past the contact, and
+rows whose centreline is above the surface are its continuation into the air. Every table and CSV
+keeps them; no figure draws them. The side view, the 3-D body, the chemistry sections and the
+far-field slab are cut at the surface plane, the centreline stops where it crosses (marked), the
+top-down footprints end there, and the comparison overlays stop each depth line on the plane. Each
+affected panel says where the plume reached the surface and how many rows lie above it.
+
+**The far field in plan.** Straight after the top-down view, a run with a far field adds the same
+picture carried on: the wastefield as a band from the near-field end along the far-field current, its
+width the Brooks width at each distance and its shade the slab-average dilution, with the acute and
+chronic mixing-zone boundaries crossing it at their distances and the dilution read there. It is drawn
+to a margin past the last boundary the far field reaches (the far-field panels carry the rest), the
+across-current axis is stretched by a printed factor when the band would otherwise be a hairline, and
+a bare `.dat` lays the band along the plume's final heading because the file names no current.
+
+**The chemistry section panels.** When the case carries chemistry, the report adds one panel per
+mineral and for pH showing the quantity **on the plume itself**: a side view with distance from the
+diffuser along the bottom and depth down the side, the outline the plume's own diameter, and the
+quantity filled in as a colour field across the whole body. Each point is the carbonate system
+*re-solved* at its local dilution, not interpolated between the centreline and the edge, because pH
+and Ω are non-linear in dilution. The dark end of the colour scale is the discharge, the light end
+the receiving water, and the ambient is marked on the colour bar. The vertical scale is stretched by
+a round factor printed on the figure so the plume has visible thickness, and the surface and seabed
+are drawn when they are near or named with their distance when they are not. These panels are the
+near field; `--gradient-dir` additionally writes a `_full` figure per quantity with the far field
+beside it on its own distance axis, continued to the acute and chronic mixing-zone boundaries as a
+slab average. Files are named `chem_<quantity>_nearfield.{svg,png}` and
+`chem_<quantity>_full.{svg,png}`. From Python:
+`plumes2.report.write_chemistry_gradient_figures(results, out_dir)`.
 
 ### `plumes2 validate` — run the executable ledger
 
 ```powershell
 plumes2 validate
-plumes2 validate -o validation.html
+plumes2 validate -o validation.pdf
 ```
 
 | flag | meaning |
 |---|---|
-| `-o FILE`, `--out FILE` | also write the HTML validation report here |
+| `-o FILE`, `--out FILE` | also write the validation report here (`.pdf` or `.html`, by suffix) |
 
 Re-derives every executable claim in [LEDGER.md](notes/LEDGER.md), prints ours / the reference / the
 error per row, then the coverage line (`executable / numbered ledger rows`) and, unconditionally,
@@ -197,12 +244,12 @@ both, case24).
 | `port_diameter` | float > 0 | m | required | one port's diameter |
 | `port_elevation` | float ≥ 0 | m | required | port height above the seabed; **the seabed is `port_depth + port_elevation`**, never stored separately |
 | `vertical_angle` | float, −90…90 | deg | required | discharge angle above horizontal (negative = downward) |
-| `horizontal_angle` | float, 0…360 | deg | required | discharge bearing |
+| `horizontal_angle` | float, 0…360 | deg | required | discharge direction in the horizontal plane, counter-clockwise from +x (not a compass bearing) |
 | `n_ports` | int ≥ 1 | — | required | number of ports |
 | `port_spacing` | float ≥ 0 | m | required | nominal spacing along the diffuser; `0` with `n_ports > 1` warns (`GeometryWarning`) |
 | `port_depth` | float > 0 | m | required | depth of the port below the surface |
-| `x_position` | float | m | `0.0` | diffuser origin, east |
-| `y_position` | float | m | `0.0` | diffuser origin, north |
+| `x_position` | float | m | `0.0` | diffuser origin, x |
+| `y_position` | float | m | `0.0` | diffuser origin, y |
 
 Derived, read-only: `bottom_depth`, `port_area`, `diffuser_length = (n_ports − 1) · port_spacing`.
 
@@ -216,6 +263,7 @@ Derived, read-only: `bottom_depth`, `port_area`, `diffuser_length = (n_ports −
 | `salinity` | float ≥ 0 | psu | `0.0` | effluent salinity |
 | `temperature` | float | °C | `20.0` | effluent temperature |
 | `pollutant` | float ≥ 0 | — | `0.0` | tracer concentration (any unit; reported diluted) |
+| `excess_density` | float ≥ 0 | kg/m³ | `0.0` | density the dissolved load adds beyond what `salinity` accounts for (pure water + NaOH, say); dilutes with the effluent, **invisible to the chemistry**; not in a `.prj` |
 
 Exit velocity per port is `flow / n_ports / port_area` (`case.exit_velocity`).
 
@@ -251,7 +299,7 @@ projects.
 |---|---|---|---|---|
 | `depth` | float ≥ 0 | m | required | |
 | `current_speed` | float ≥ 0 | m/s | `0.0` | near-field current |
-| `current_direction` | float, 0…360 | deg | `0.0` | near-field current bearing |
+| `current_direction` | float, 0…360 | deg | `0.0` | near-field current direction, counter-clockwise from +x (same convention as `horizontal_angle`) |
 | `salinity` | float ≥ 0 | psu | `0.0` | |
 | `temperature` | float | °C | `20.0` | |
 | `background_pollutant` | float ≥ 0 | — | `0.0` | ambient tracer concentration |
@@ -480,10 +528,10 @@ Import paths are stable; everything below is public (`__all__`) and documented i
 from plumes2 import Case, load_case, load_project, read_dat, read_prj
 
 case = load_case("case.yaml")                                     # ours
-case = load_project("Macoma2.prj").to_case()                      # the exe's, plus CSVs beside it
-case = load_project("Macoma2.prj", warn_on_drift=False).to_case() # silence ProjectDriftWarning
+case = load_project("project.prj").to_case()                      # the exe's, plus CSVs beside it
+case = load_project("project.prj", warn_on_drift=False).to_case() # silence ProjectDriftWarning
 case = Case.model_validate({...})                                 # from a plain dict
-prj  = read_prj("Macoma2.prj")                                    # lossless PrjFile, no validation
+prj  = read_prj("project.prj")                                    # lossless PrjFile, no validation
 ```
 
 `load_project` finds the six CSV tables next to the `.prj` and reads chemistry and DO from them;
@@ -610,6 +658,7 @@ comparison.labels()                     # ("port_spacing 1", "port_spacing 2", .
 comparison.differences                  # [Difference(field="diffuser.port_spacing", values=(1.0, 2.0, 2.5))]
 comparison.frame()                      # one long frame with a `run` column; farfield=True for Brooks
 build_comparison_report(comparison, "overlay.html", units="US", title="Spacing")
+build_combined_report(comparison, "study.pdf", names=("2 ft", "1 m"))   # overlays, then each run's full report, one file
 ```
 
 The legend is a diff of the *resolved* cases (defaults included); identical cases label
@@ -621,9 +670,9 @@ The legend is a diff of the *resolved* cases (defaults included); identical case
 from plumes2.report import build_report, render_report, report_from_dat
 from plumes2.plotframe import from_results, from_dat, PlotFrame
 
-build_report(results, "report.html", units="SI", title=None)           # from a run
-report_from_dat("trace.dat", "report.html", case_path="case.yaml")     # from an exe trace
-html = render_report(results)                                          # the page as a string
+build_report(results, "report.pdf", units="SI", title=None)            # from a run; .pdf or .html by suffix
+report_from_dat("trace.dat", "report.pdf", case_path="case.yaml")      # from an exe trace
+html = render_report(results)                                          # the HTML page as a string
 
 plot = from_results(results)                                          # PlotFrame, no caveats
 plot = from_dat(read_dat("trace.dat"), "trace.dat", case=case, secondaries=True,
@@ -824,12 +873,12 @@ Names carry their units. Order is fixed so two runs diff line for line.
 | `merged` | whether neighbouring plumes overlap here |
 | `plume_diameter_m` | `2b`; the merged vertical extent where merging applies |
 | `depth_m` | positive down |
-| `x_m` | east of the port |
-| `y_m` | north of the port |
+| `x_m` | along the model's x axis from the port (the frame the angles are measured in) |
+| `y_m` | along the model's y axis from the port |
 | `speed_m_s` | plume element speed |
 | `salinity_psu` | plume |
 | `temperature_degC` | plume |
-| `density_kg_m3` | plume, under `near_field.equation_of_state` |
+| `density_kg_m3` | plume, under `near_field.equation_of_state`, plus the `excess_density` tracer |
 
 Appended when chemistry runs (both endmembers given):
 

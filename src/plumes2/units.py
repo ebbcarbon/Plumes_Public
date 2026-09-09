@@ -6,7 +6,7 @@ column, and they **silently rescale physical values**: the same stored `2.0` is
 produces plausible, wrong answers rather than an error, so this module is
 deliberately strict -- an unrecognised selector raises rather than defaulting to SI.
 
-The map was decoded from `reference_cases/case00_macoma_legacy_fps`, which is the only
+The map was decoded from `reference_cases/case00_legacy_fps`, which is the only
 matched `.prj` + `.dat` pair we have: the `.prj` stores raw values and the `.dat`
 echoes converted ones, so the factors read straight off.
 

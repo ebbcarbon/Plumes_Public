@@ -3,7 +3,7 @@
     plumes2 run CASE [-o DIR] [--samples N] [--units SI|US]
                                                integrate and write a result directory
     plumes2 report CASE [-o FILE] [--units SI|US]
-                                               one self-contained HTML report
+                                               one report, a PDF (or HTML by suffix)
     plumes2 validate [-o FILE]                 run the validation ledger and report it
     plumes2 info CASE                          summarise a case without running it
     plumes2 convert IN OUT                     .prj <-> .yaml
@@ -121,30 +121,81 @@ def _command_report(args: argparse.Namespace) -> int:
     an optional `--case` because a chemistry trace prints TA and DIC but not the plume salinity and
     temperature the secondary quantities need. See `plumes2.plotframe.from_dat`.
     """
-    from plumes2.report import build_report, report_from_dat
+    from plumes2.report import build_report, report_from_dat, write_chemistry_gradient_figures
     from plumes2.results import run
 
     source = Path(args.case)
     if not source.exists():
         raise _UsageError(f"no such file: {source}")
-    target = Path(args.out) if args.out else source.with_suffix(".report.html")
+    target = Path(args.out) if args.out else source.with_suffix(".report.pdf")
 
+    # What the standalone gradient figures are drawn from, when `--gradient-dir` is given: the run
+    # on the case path, or the adapted `.dat` (with its case, if one was supplied) otherwise.
+    figure_source: object | None = None
     if source.suffix.lower() == ".dat":
         _, notes = _collect(
             report_from_dat, source, target, case_path=args.case_file, units=args.units
         )
+        if args.gradient_dir:
+            figure_source, more = _collect(_plot_from_dat, source, args.case_file)
+            notes += more
     else:
         case, notes = _collect(_load_case, source)
         results, more = _collect(run, case, samples=args.samples, source=source)
         notes += more
         _collect(build_report, results, target, units=args.units)
+        figure_source = results
 
     for note in notes:
         print(note, file=sys.stderr)
     print(f"ran   {source}")
     print(f"wrote {target}")
-    print("  open it in a browser; it needs nothing else")
+    if target.suffix.lower() == ".pdf":
+        print("  a PDF; open it in any reader")
+    else:
+        print("  open it in a browser; it needs nothing else")
+
+    if args.gradient_dir and figure_source is not None:
+        written, gnotes = _collect(
+            write_chemistry_gradient_figures,
+            figure_source,
+            args.gradient_dir,
+            units=args.units,
+        )
+        for note in gnotes:
+            print(note, file=sys.stderr)
+        if written:
+            for path in written:
+                print(f"wrote {path}")
+        else:
+            print(
+                "  no gradient figures: the source carries no case to re-solve the plume "
+                "section (a bare .dat needs --case)",
+                file=sys.stderr,
+            )
     return 0
+
+
+def _plot_from_dat(dat_path: Path, case_path: str | None):  # type: ignore[no-untyped-def]
+    """A `PlotFrame` from an exe `.dat`, with its case when one was supplied.
+
+    The same adaptation `report_from_dat` does internally, exposed so the gradient figures can be
+    drawn from a trace as well as from a run.
+    """
+    from plumes2.io.dat import read_dat
+    from plumes2.io.project import load_project
+    from plumes2.io.yaml_case import load_case
+    from plumes2.plotframe import from_dat
+
+    case = None
+    if case_path is not None:
+        source = Path(case_path)
+        case = (
+            load_project(source, warn_on_drift=False).to_case()
+            if source.suffix.lower() == ".prj"
+            else load_case(source)
+        )
+    return from_dat(read_dat(dat_path), dat_path, case=case)
 
 
 def _command_validate(args: argparse.Namespace) -> int:
@@ -166,8 +217,10 @@ def _command_validate(args: argparse.Namespace) -> int:
     passed = sum(outcome.passed for outcome in outcomes)
     executable = sum(count for count, _total in coverage_by_phase().values())
     ledger = sum(total for _count, total in coverage_by_phase().values())
-    print(f"  {passed}/{len(outcomes)} inside tolerance"
-          f"; {executable}/{ledger} numbered ledger rows are executable")
+    print(
+        f"  {passed}/{len(outcomes)} inside tolerance"
+        f"; {executable}/{ledger} numbered ledger rows are executable"
+    )
     # Executable is not the same as agreeing, and the fraction above cannot say which. Printed
     # unconditionally and derived, never hand-counted -- a reader who stops at the coverage line
     # would otherwise read 148/154 as 96 % agreement while the near field's largest defect
@@ -175,11 +228,15 @@ def _command_validate(args: argparse.Namespace) -> int:
     kinds = rows_by_agreement()
     diverging, defects = kinds[Agreement.DIVERGES], kinds[Agreement.REPRODUCES_DEFECT]
     if diverging:
-        print(f"  note: {len(diverging)} of those rows are recorded DIVERGENCES, not agreements"
-              f" -- rows {', '.join(diverging)}")
+        print(
+            f"  note: {len(diverging)} of those rows are recorded DIVERGENCES, not agreements"
+            f" -- rows {', '.join(diverging)}"
+        )
     if defects:
-        print(f"  note: {len(defects)} pass by reproducing a defect in the reference"
-              f" -- rows {', '.join(defects)}")
+        print(
+            f"  note: {len(defects)} pass by reproducing a defect in the reference"
+            f" -- rows {', '.join(defects)}"
+        )
     if args.out:
         print(f"wrote {build_validation_report(args.out, outcomes)}")
     return 0 if passed == len(outcomes) else 1
@@ -193,18 +250,28 @@ def _command_info(args: argparse.Namespace) -> int:
     currents = sorted({level.current_speed for level in case.ambient.levels})
     print(f"{args.case}")
     print(f"  ports         {diffuser.n_ports} at {diffuser.port_spacing:g} m spacing")
-    print(f"  port          {diffuser.port_diameter:g} m, {diffuser.vertical_angle:g} deg "
-          f"vertical, {diffuser.horizontal_angle:g} deg horizontal")
+    print(
+        f"  port          {diffuser.port_diameter:g} m, {diffuser.vertical_angle:g} deg "
+        f"vertical, {diffuser.horizontal_angle:g} deg horizontal"
+    )
     print(f"  depth         {diffuser.port_depth:g} m, seabed at {diffuser.bottom_depth:g} m")
-    print(f"  flow          {effluent.flow:g} m3/s at {effluent.salinity:g} psu, "
-          f"{effluent.temperature:g} C")
-    print(f"  ambient       {len(case.ambient.levels)} levels, current "
-          f"{min(currents):g}-{max(currents):g} m/s")
-    print(f"  chemistry     {'yes' if case.effluent_chemistry else 'no effluent endmember'}"
-          f", ambient {'yes' if case.ambient.has_chemistry else 'no'}")
-    print(f"  termination   max rise/fall {case.near_field.max_rise_or_fall}, "
-          f"stop at surface {case.near_field.stop_at_surface}, "
-          f"bottom {case.near_field.stop_at_bottom}")
+    print(
+        f"  flow          {effluent.flow:g} m3/s at {effluent.salinity:g} psu, "
+        f"{effluent.temperature:g} C"
+    )
+    print(
+        f"  ambient       {len(case.ambient.levels)} levels, current "
+        f"{min(currents):g}-{max(currents):g} m/s"
+    )
+    print(
+        f"  chemistry     {'yes' if case.effluent_chemistry else 'no effluent endmember'}"
+        f", ambient {'yes' if case.ambient.has_chemistry else 'no'}"
+    )
+    print(
+        f"  termination   max rise/fall {case.near_field.max_rise_or_fall}, "
+        f"stop at surface {case.near_field.stop_at_surface}, "
+        f"bottom {case.near_field.stop_at_bottom}"
+    )
     return 0
 
 
@@ -262,9 +329,7 @@ def _build_parser() -> argparse.ArgumentParser:
     run_parser = sub.add_parser("run", help="integrate a case and write a result directory")
     run_parser.add_argument("case", help="a .prj from the exe, or one of our .yaml files")
     run_parser.add_argument("-o", "--out", help="output directory (default: CASE_results)")
-    run_parser.add_argument(
-        "--samples", type=int, default=200, help="output rows (default: 200)"
-    )
+    run_parser.add_argument("--samples", type=int, default=200, help="output rows (default: 200)")
     # ⚠️ Display only. The CSVs stay SI whatever this says -- see `plumes2.display`.
     run_parser.add_argument(
         "--units",
@@ -274,11 +339,13 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     run_parser.set_defaults(handler=_command_run)
 
-    report_parser = sub.add_parser("report", help="write one self-contained HTML report")
+    report_parser = sub.add_parser("report", help="write one report, a PDF or (by suffix) HTML")
     report_parser.add_argument(
         "case", help="a .prj or .yaml to run, or a .dat the exe already wrote"
     )
-    report_parser.add_argument("-o", "--out", help="output file (default: CASE.report.html)")
+    report_parser.add_argument(
+        "-o", "--out", help="output file, .pdf or .html (default: CASE.report.pdf)"
+    )
     report_parser.add_argument("--samples", type=int, default=200, help="rows (default: 200)")
     report_parser.add_argument(
         "--units", choices=sorted(SYSTEMS), default="SI", help="display units (default: SI)"
@@ -289,12 +356,19 @@ def _build_parser() -> argparse.ArgumentParser:
         dest="case_file",
         help="for a .dat: the .prj or .yaml behind it, which unlocks the chemistry secondaries",
     )
+    report_parser.add_argument(
+        "--gradient-dir",
+        dest="gradient_dir",
+        help="also write standalone pH/aragonite/calcite/brucite gradient figures (PNG+SVG) here",
+    )
     report_parser.set_defaults(handler=_command_report)
 
     validate_parser = sub.add_parser(
         "validate", help="run the validation ledger; exits 1 if any target is out of tolerance"
     )
-    validate_parser.add_argument("-o", "--out", help="also write the HTML validation report here")
+    validate_parser.add_argument(
+        "-o", "--out", help="also write the validation report here (.pdf or .html)"
+    )
     validate_parser.set_defaults(handler=_command_validate)
 
     info_parser = sub.add_parser("info", help="summarise a case without running it")

@@ -15,11 +15,11 @@ import pytest
 from plumes2.io.dat import read_dat
 from tests.conftest import ALL_DAT_PATHS, REFERENCE_CASES
 
-CASE06 = REFERENCE_CASES / "case06_macoma_arag_s36" / "test5_TxtOutputs.dat"
-CASE09_A = REFERENCE_CASES / "case09_macoma_single_port" / "test9_TxtOutputs.dat"
-CASE09_B = REFERENCE_CASES / "case09_macoma_single_port" / "test10_TxtOutputs.dat"
-CASE10 = REFERENCE_CASES / "case10_macoma_bottom_hit" / "test11_TxtOutputs.dat"
-CASE11 = REFERENCE_CASES / "case11_macoma_single_port_slow" / "test12_TxtOutputs.dat"
+CASE06 = REFERENCE_CASES / "case06_arag_s36" / "test5_TxtOutputs.dat"
+CASE09_A = REFERENCE_CASES / "case09_single_port" / "test9_TxtOutputs.dat"
+CASE09_B = REFERENCE_CASES / "case09_single_port" / "test10_TxtOutputs.dat"
+CASE10 = REFERENCE_CASES / "case10_bottom_hit" / "test11_TxtOutputs.dat"
+CASE11 = REFERENCE_CASES / "case11_single_port_slow" / "test12_TxtOutputs.dat"
 
 PORT_AREA = math.pi * (0.0127 / 2) ** 2
 
@@ -99,9 +99,9 @@ class TestSinglePortCorrection:
 
 #: (trace, output interval). The interval is a project setting, absent from the .dat.
 _INTERVAL_CASES = [
-    (REFERENCE_CASES / "case05_macoma_merging" / "test4_TxtOutputs.dat", 5),
+    (REFERENCE_CASES / "case05_merging" / "test4_TxtOutputs.dat", 5),
     (CASE06, 5),
-    (REFERENCE_CASES / "case07_macoma_s45_dense" / "test6_TxtOutputs.dat", 5),
+    (REFERENCE_CASES / "case07_s45_dense" / "test6_TxtOutputs.dat", 5),
     (CASE10, 5),
     (CASE11, 5),
 ]
@@ -139,7 +139,7 @@ class TestAragoniteCutoffAcrossEveryChemistryTrace:
     @pytest.mark.parametrize(
         ("path", "effluent_salinity"),
         [
-            (REFERENCE_CASES / "case07_macoma_s45_dense" / "test6_TxtOutputs.dat", 45.0),
+            (REFERENCE_CASES / "case07_s45_dense" / "test6_TxtOutputs.dat", 45.0),
             (CASE10, 45.0),
             (CASE11, 45.0),
         ],
@@ -165,7 +165,7 @@ class TestNoNewBannersAreUnaccountedFor:
         """A guard: a new exe behaviour should fail loudly rather than pass unnoticed."""
         seen: set[str] = set()
         for path in ALL_DAT_PATHS:
-            if path.name == "ModelResults_Macoma1.dat":
+            if path.name == "ModelResults_legacy1.dat":
                 continue  # header-only legacy artifact
             for event in read_dat(path).events:
                 if not event.is_note:

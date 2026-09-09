@@ -5,13 +5,13 @@ merging closure does at deep overlap **in a regime the port is accurate in**. ca
 effluent grows so fast that its step controller sits on its 2 % cap, and its unmerged control
 carries 2.10 % of error all by itself.
 
-`Macoma2.prj` is archived with them. ⚠️ **It describes neither the salinity nor the spacing of any
+`project.prj` is archived with them. ⚠️ **It describes neither the salinity nor the spacing of any
 run here** — it is the 2 psu / 2.0 m / 90° base, and every run below changes the effluent salinity,
 the port spacing and the horizontal angle from it. The `.dat` diffuser echo records the spacing and
 the angle; the salinity is the user's record, listed below.
 
 Base: **25 ports**, 0.0127 m port diameter, 0.005 m³/s total, 2.0 m port depth, 45° vertical,
-**65° horizontal** into a 90° current at 0.02 m/s, ~31 psu Macoma ambient, contraction 0.61,
+**65° horizontal** into a 90° current at 0.02 m/s, ~31 psu case03 ambient, contraction 0.61,
 aspiration 0.1, output interval 1.
 
 | run | spacing | effluent | rows | merges | max `d/L` |
@@ -142,3 +142,7 @@ the opposite. **Report to SSMC.**
 ⚠️ It also caps how far the suppression measurement reaches: the control is only clean up to its
 own banner at step 373 (t = 123.75 s), which is what bounds the samples above. The merged runs'
 banners are at 166–232, so the usable window is wide, but it is not the whole trace.
+
+## Names (2026-09-09)
+
+The exe wrote these files under the names on the left; renamed the same day, contents byte-identical (the `.dat` header still echoes the original project title): `Macoma2.prj` → `project.prj`, `macoma2ambient.csv` → `ambient.csv`, `macoma2diffuser.csv` → `diffuser.csv`, `macoma2effluent.csv` → `effluent.csv`, `macoma2mixzone.csv` → `mixzone.csv`.

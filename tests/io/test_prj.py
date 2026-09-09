@@ -141,7 +141,7 @@ class TestStructure:
         proved these blocks rescale physical values."""
         from tests.conftest import REFERENCE_CASES
 
-        prj = read_prj(REFERENCE_CASES / "case01_macoma_cms" / "Macoma2.prj")
+        prj = read_prj(REFERENCE_CASES / "case01_cms" / "project.prj")
         assert prj.effluent.unit_flags == [1, 2, 1, 1, 1]
         assert prj.effluent.rows[0][0] == pytest.approx(0.005)
 
@@ -154,8 +154,8 @@ class TestStructure:
         """Name lists are count-prefixed, so files differ in total line count."""
         from tests.conftest import REFERENCE_CASES
 
-        case01 = read_prj(REFERENCE_CASES / "case01_macoma_cms" / "Macoma2.prj")
-        case03 = read_prj(REFERENCE_CASES / "case03_macoma_carbonate" / "test.prj")
+        case01 = read_prj(REFERENCE_CASES / "case01_cms" / "project.prj")
+        case03 = read_prj(REFERENCE_CASES / "case03_carbonate" / "test.prj")
         assert len(case01.nearfield_plot_variables) == 9
         assert len(case03.nearfield_plot_variables) == 5
         assert "Plume-Density" in case01.nearfield_plot_variables

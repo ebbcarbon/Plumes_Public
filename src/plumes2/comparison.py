@@ -67,6 +67,14 @@ def flatten_case(case: Case) -> dict[str, Any]:
             # Compared whole: a tuple of tuples is hashable and order-sensitive, and a profile's
             # order is meaningful (it is interpolated in depth).
             yield prefix, tuple(tuple(sorted(row.items())) for row in value)
+            # And column by column where a column is uniform down the table: an ambient whose
+            # current is 0.05 m/s at every depth differs from one at 0.02 m/s *in its current*,
+            # and a legend can say so, where 'levels (6 levels)' twice says nothing.
+            if value and all(isinstance(row, dict) for row in value):
+                for key in value[0]:
+                    column = [row.get(key) for row in value]
+                    if all(entry == column[0] for entry in column[1:]):
+                        yield f"{prefix}.{key}", column[0]
         elif isinstance(value, list):
             for index, item in enumerate(value):
                 yield from walk(f"{prefix}[{index}]", item)
@@ -107,13 +115,20 @@ class Difference:
 def differences(cases: Sequence[Case]) -> list[Difference]:
     """Every resolved field on which `cases` do not all agree, in case-definition order.
 
+    `description` is excluded -- it names a case, it does not configure one.
+
     An empty list means the cases are identical, which is worth knowing: a comparison figure of
     two identical cases is a figure of one line drawn twice, and a caller should say so rather
     than let a reader infer a difference from two colours.
     """
     if len(cases) < 2:
         return []
-    flattened = [flatten_case(case) for case in cases]
+    # The description is a label, not a setting: two cases that differ only in what they are called
+    # are the same run, and a legend built on it would say nothing about the physics.
+    flattened = [
+        {key: value for key, value in flatten_case(case).items() if key != "description"}
+        for case in cases
+    ]
     fields = list(flattened[0])
     # A field missing from one case is itself a difference; `model_dump` on a validated Case is
     # complete, so this only fires if the model gains conditional fields later.
@@ -127,7 +142,15 @@ def differences(cases: Sequence[Case]) -> list[Difference]:
         values = tuple(entry.get(field) for entry in flattened)
         if any(value != values[0] for value in values[1:]):
             found.append(Difference(field, values))
-    return found
+    # A whole table that differs only in columns already named column-by-column adds nothing
+    # a legend can use, so it steps aside for them.
+    named = {difference.field for difference in found}
+    return [
+        difference
+        for difference in found
+        if difference.field not in _WHOLE_TABLE_FIELDS
+        or not any(name.startswith(difference.field + ".") for name in named)
+    ]
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,18 +193,33 @@ class Comparison:
 
         With nothing differing, every run is labelled `identical`, which is the honest answer and
         makes a duplicated line obvious rather than mysterious.
+
+        The bound bends for one thing: two runs must never share a label. If the first
+        `max_fields` fields agree between some pair of runs -- four effluents whose first two
+        differences are salinity and excess density, say, two of which are the same seawater --
+        further fields are added, in order, until every label is distinct (or every field is
+        shown). A legend with two identical entries misidentifies a line; a longer one does not.
         """
         found = self.differences
         if not found:
             return tuple("identical" for _ in self.runs)
-        shown, hidden = found[:max_fields], found[max_fields:]
-        labels = []
-        for index in range(len(self.runs)):
-            parts = [difference.describe(index) for difference in shown]
-            if hidden:
-                parts.append(f"(+{len(hidden)} more)")
-            labels.append(", ".join(parts))
-        return tuple(labels)
+        shown_count = min(max_fields, len(found))
+
+        def build(count: int) -> tuple[str, ...]:
+            shown, hidden = found[:count], found[count:]
+            labels = []
+            for index in range(len(self.runs)):
+                parts = [difference.describe(index) for difference in shown]
+                if hidden:
+                    parts.append(f"(+{len(hidden)} more)")
+                labels.append(", ".join(parts))
+            return tuple(labels)
+
+        labels = build(shown_count)
+        while len(set(labels)) < len(self.runs) and shown_count < len(found):
+            shown_count += 1
+            labels = build(shown_count)
+        return labels
 
     def frame(self, *, farfield: bool = False) -> pd.DataFrame:
         """The runs' rows in one long frame, with a `run` column carrying the derived label.

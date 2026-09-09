@@ -1,7 +1,7 @@
 # case37 — the depth axis at a wide port, and the regime boundary is located
 
 Run 2026-08-19, the discriminator case36 asked for: **port depth swept at a fixed 0.5 m port**,
-so the axis moves alone. One port, 0.005 m³/s, downward at −45°, 35 psu into the Macoma ambient,
+so the axis moves alone. One port, 0.005 m³/s, downward at −45°, 35 psu into the case03 ambient,
 output interval 1.
 
 | run | port depth | first trap | `d >` depth | first local max | banner | lag past `max(trap, cross)` | regime |

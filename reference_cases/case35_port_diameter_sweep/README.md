@@ -4,7 +4,7 @@ Run 2026-08-19 to test whether the single-port limiting-spacing lag is smooth in
 Froude number, as case33 and case30 together suggested. **It is not, and `F` is not the variable.**
 
 `limspc_mid`'s geometry throughout: **one port**, discharged downward at −45° from a **2.4 m**
-port depth, 35 psu effluent into the Macoma ambient, output interval 1. Only the port diameter
+port depth, 35 psu effluent into the case03 ambient, output interval 1. Only the port diameter
 and the total flow change.
 
 | run | port dia | flow | first trap | `d >` port depth | first local max | `merging happened` | **lag** |

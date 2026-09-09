@@ -57,6 +57,7 @@ __all__ = [
     "SERIES",
     "SURFACE",
     "PaletteCheck",
+    "blend",
     "contrast_ratio",
     "matplotlib_style",
     "validate",
@@ -85,6 +86,18 @@ SERIES: tuple[str, ...] = (
 
 #: Series-hue wash for an area or envelope fill. A wash, never a saturated block.
 FILL_ALPHA = 0.10
+
+
+def blend(base: str, other: str, fraction: float) -> str:
+    """`base` blended `fraction` of the way toward `other`, both `#rrggbb`.
+
+    How the report builds a sequential ramp without leaving the validated palette: a slot washed
+    toward `SURFACE` at the light end and deepened toward `INK_PRIMARY` at the dark end.
+    """
+    a = np.array([int(base[i : i + 2], 16) for i in (1, 3, 5)], dtype=np.float64)
+    b = np.array([int(other[i : i + 2], 16) for i in (1, 3, 5)], dtype=np.float64)
+    mixed = np.clip(a + (b - a) * fraction, 0, 255).astype(int)
+    return "#{:02x}{:02x}{:02x}".format(*mixed)
 
 
 def matplotlib_style() -> dict[str, Any]:

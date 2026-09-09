@@ -97,7 +97,7 @@ sessions, not merely within one.
 ## The case
 
 case03's geometry throughout — 25 ports, 2 m spacing, 0.0127 m ports at 2 m depth, 35 psu effluent
-at 0.000219 m³/s into the Macoma ambient, 0.02 m/s current, output interval 1, 410 steps.
+at 0.000219 m³/s into the case03 ambient, 0.02 m/s current, output interval 1, 410 steps.
 
 ⚠️ **This geometry never merges** (the trace prints `Plumes not merged`), so only the unmerged
 column of PLAN 6b's table is exercised here. The merged values — 1.5000 parabolic, 2.2222 for

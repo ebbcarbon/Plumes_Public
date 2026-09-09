@@ -472,7 +472,7 @@ def classify_farfield_stop(
 
     ⚠️ **Order matters, and it encodes "whichever binds first".** A distance stop is tested
     before a dilution stop because a run that reached its typed distance may *also* have crossed
-    a dilution level in its final rows (case02's Macomatest1 crosses 5000x at 500.0 m exactly) --
+    a dilution level in its final rows (case02's test1 crosses 5000x at 500.0 m exactly) --
     the distance bound it, and the dilution number is a coincidence. A dilution stop is only
     claimed when the crossing happened within the final `DILUTION_STOP_LAG_ROWS`, which bounds
     the exe's measured stopping lag of 1-4 rows (rows 258b, 191b have the same shape in the

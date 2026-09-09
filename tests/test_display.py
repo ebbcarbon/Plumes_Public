@@ -90,9 +90,7 @@ def test_si_is_a_no_op_that_still_copies(frame: pd.DataFrame) -> None:
 
 
 def test_lengths_speeds_and_temperatures_convert_and_are_renamed() -> None:
-    frame = pd.DataFrame(
-        {"depth_m": [3.048], "speed_m_s": [0.3048], "temperature_degC": [100.0]}
-    )
+    frame = pd.DataFrame({"depth_m": [3.048], "speed_m_s": [0.3048], "temperature_degC": [100.0]})
     out = convert_frame(frame, US)
     assert list(out.columns) == ["depth_ft", "speed_ft_s", "temperature_degF"]
     assert out["depth_ft"].iloc[0] == pytest.approx(10.0)

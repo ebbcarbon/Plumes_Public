@@ -7,7 +7,7 @@ because that is where the exe demonstrably misbehaves.
 
 Extrapolation matters more than it sounds:
 
-* Every Macoma project puts the seabed at 17 m (2 m port on a 15 m riser) against an
+* Every archived-diffuser project puts the seabed at 17 m (2 m port on a 15 m riser) against an
   ambient profile that stops at 15 m, so the bottom 2 m are always extrapolated.
 * case09's plume rose above the top of its 1-4 m ambient chemistry profile and the
   transport broke completely — TA fell below the ambient endmember, which conservative

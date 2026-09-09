@@ -9,7 +9,7 @@ The rule that fits eight of nine runs::
     effective spacing = port spacing * |cos(horizontal angle - current direction)|
     wastefield width  = (n_ports - 1) * effective spacing + final plume diameter
 
-Every Macoma case discharges at 90 degrees into a 90 degree current, so the angle between
+Every archived-diffuser case discharges at 90 degrees into a 90 degree current, so the angle between
 them is zero and the correction is invisible -- which is why the uncorrected form fitted
 them all and hid this for so long. case13 is the only run at a non-zero offset produced by
 the current exe build, and it follows the cosine exactly.
@@ -31,13 +31,13 @@ from tests.conftest import REFERENCE_CASES, UPSTREAM
 #: (label, trace, n_ports, spacing, horizontal angle, current direction)
 _C = REFERENCE_CASES
 RUNS = [
-    ("case02", _C / "case02_macoma_mgd/Macomatest1.dat", 25, 2.00, 90.0, 90.0),
-    ("case05", _C / "case05_macoma_merging/test4_TxtOutputs.dat", 25, 0.60, 90.0, 90.0),
-    ("case06", _C / "case06_macoma_arag_s36/test5_TxtOutputs.dat", 25, 0.60, 90.0, 90.0),
-    ("case07", _C / "case07_macoma_s45_dense/test6_TxtOutputs.dat", 25, 0.60, 90.0, 90.0),
-    ("case10", _C / "case10_macoma_bottom_hit/test11_TxtOutputs.dat", 25, 0.60, 90.0, 90.0),
-    ("case11", _C / "case11_macoma_single_port_slow/test12_TxtOutputs.dat", 1, 0.60, 90.0, 90.0),
-    ("case12", _C / "case12_macoma_shoreline_enabled/test13_TxtOutputs.dat", 25, 2.00, 90.0, 90.0),
+    ("case02", _C / "case02_mgd/test1.dat", 25, 2.00, 90.0, 90.0),
+    ("case05", _C / "case05_merging/test4_TxtOutputs.dat", 25, 0.60, 90.0, 90.0),
+    ("case06", _C / "case06_arag_s36/test5_TxtOutputs.dat", 25, 0.60, 90.0, 90.0),
+    ("case07", _C / "case07_s45_dense/test6_TxtOutputs.dat", 25, 0.60, 90.0, 90.0),
+    ("case10", _C / "case10_bottom_hit/test11_TxtOutputs.dat", 25, 0.60, 90.0, 90.0),
+    ("case11", _C / "case11_single_port_slow/test12_TxtOutputs.dat", 1, 0.60, 90.0, 90.0),
+    ("case12", _C / "case12_shoreline_enabled/test13_TxtOutputs.dat", 25, 2.00, 90.0, 90.0),
     ("case13", _C / "case13_generated_example/PythonGenerated2.dat", 18, 6.10, 30.0, 0.0),
     ("case14", _C / "case14_generated_nochem/PythonGenerated3.dat", 18, 6.10, 30.0, 0.0),
 ]
@@ -82,7 +82,7 @@ class TestCosineRule:
         assert predicted == pytest.approx(dat.wastefield_width, abs=0.005)
 
     def test_only_the_generated_runs_discriminate(self) -> None:
-        """Every Macoma run has a zero offset, where the correction is invisible."""
+        """Every archived-diffuser run has a zero offset, where the correction is invisible."""
         offsets = {label: abs(h - c) for label, _p, _n, _s, h, c in RUNS}
         assert offsets["case13"] == offsets["case14"] == pytest.approx(30.0)
         assert all(v == 0.0 for k, v in offsets.items() if k not in ("case13", "case14"))

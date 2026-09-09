@@ -1,0 +1,69 @@
+# The suite discipline, enforced rather than asked for (PLAN §6's TODO; the rules are
+# CONTRIBUTING.md's). Two things are deliberate here:
+#
+# * `-n auto --dist loadfile`, never bare `-n auto` -- per-file distribution preserves the
+#   module- and session-scoped fixtures the suite is built around (`ledger_outcomes` above all);
+#   bare `-n auto` scatters them and one 2.5 s module becomes a 233 s one.
+# * `-m "not slow"` is the fast lane, and it is a real one: tests/conftest.py fails any unmarked
+#   test whose call phase exceeds SLOW_SECONDS, so the lane cannot silently rot. The full ~4 min
+#   suite stays a local, on-demand run.
+#
+# The ledger's measured outcomes are cached in .plumes2_outcome_cache.json, keyed internally by
+# a digest of src/plumes2 plus the reference data -- so restoring a stale copy is safe (it
+# self-invalidates) and restoring a fresh one saves the expensive first pass.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.14 is the development interpreter; 3.13 is the declared floor, kept viable
+        # (notes/ENVIRONMENT.md).
+        python: ["3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            pyproject.toml
+            requirements.lock.txt
+
+      - name: Install
+        run: |
+          uv venv --python ${{ matrix.python }}
+          uv pip install -e ".[dev]"
+
+      # The tools are called from the environment the Install step built. `uv run` would
+      # instead discover the project, rebuild .venv with its own interpreter and without the
+      # dev extras -- which is how the first run lost both the matrix Python and ruff.
+      - name: Ruff
+        run: .venv/bin/ruff check src tests
+
+      - name: Mypy
+        run: .venv/bin/mypy
+
+      - name: Restore the ledger outcome cache
+        uses: actions/cache@v4
+        with:
+          path: .plumes2_outcome_cache.json
+          key: plumes2-outcomes-${{ matrix.python }}-${{ github.sha }}
+          restore-keys: |
+            plumes2-outcomes-${{ matrix.python }}-
+
+      - name: Tests (fast lane)
+        run: .venv/bin/pytest -n auto --dist loadfile -m "not slow"

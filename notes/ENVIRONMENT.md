@@ -98,7 +98,7 @@ happened twice in `plumes2.chem` before the first build caught it.
 
 ## Full lock
 
-[requirements.lock.txt](../requirements.lock.txt) — 122 packages, the complete
+[requirements.lock.txt](../requirements.lock.txt) — 127 packages, the complete
 transitive closure of all extras as installed. Regenerate with:
 
 ```powershell

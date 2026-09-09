@@ -1,7 +1,7 @@
 # case33 — effluent salinity through the limiting-spacing rule, and a buoyant control
 
 Run 2026-08-19 from the `limspc_mid` project: **one port** at 0.2 m and 0.005 m³/s, discharged
-downward at −45° from a **2.4 m** port depth into the Macoma ambient. Only the effluent salinity
+downward at −45° from a **2.4 m** port depth into the case03 ambient. Only the effluent salinity
 differs.
 
 | run | effluent | first trap | `merging happened` | first step with `d >` port depth | lag |

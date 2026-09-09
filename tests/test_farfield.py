@@ -43,12 +43,12 @@ from tests.conftest import REFERENCE_CASES
 
 #: (label, trace, far-field current speed). Every current-build trace with a far field.
 FARFIELD_TRACES = [
-    ("case02", REFERENCE_CASES / "case02_macoma_mgd/Macomatest1.dat", 0.02),
-    ("case05", REFERENCE_CASES / "case05_macoma_merging/test4_TxtOutputs.dat", 0.02),
-    ("case06", REFERENCE_CASES / "case06_macoma_arag_s36/test5_TxtOutputs.dat", 0.02),
-    ("case07", REFERENCE_CASES / "case07_macoma_s45_dense/test6_TxtOutputs.dat", 0.02),
-    ("case10", REFERENCE_CASES / "case10_macoma_bottom_hit/test11_TxtOutputs.dat", 0.02),
-    ("case12", REFERENCE_CASES / "case12_macoma_shoreline_enabled/test13_TxtOutputs.dat", 0.02),
+    ("case02", REFERENCE_CASES / "case02_mgd/test1.dat", 0.02),
+    ("case05", REFERENCE_CASES / "case05_merging/test4_TxtOutputs.dat", 0.02),
+    ("case06", REFERENCE_CASES / "case06_arag_s36/test5_TxtOutputs.dat", 0.02),
+    ("case07", REFERENCE_CASES / "case07_s45_dense/test6_TxtOutputs.dat", 0.02),
+    ("case10", REFERENCE_CASES / "case10_bottom_hit/test11_TxtOutputs.dat", 0.02),
+    ("case12", REFERENCE_CASES / "case12_shoreline_enabled/test13_TxtOutputs.dat", 0.02),
     ("case13", REFERENCE_CASES / "case13_generated_example/PythonGenerated2.dat", 0.05),
     ("case14", REFERENCE_CASES / "case14_generated_nochem/PythonGenerated3.dat", 0.05),
 ]
@@ -162,7 +162,7 @@ class TestWidthAgainstTheExe:
         [t for t in FARFIELD_TRACES if t[0] not in ("case13", "case14")],
         ids=[t[0] for t in FARFIELD_TRACES if t[0] not in ("case13", "case14")],
     )
-    def test_macoma_traces_are_exact_to_printed_precision(
+    def test_archive_traces_are_exact_to_printed_precision(
         self, label: str, path: object, current: float
     ) -> None:
         parameters, x, reported, _dilution = _trace(path, current)

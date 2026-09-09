@@ -46,8 +46,8 @@ from plumes2.io.csv_tables import read_csv_table
 from plumes2.io.dat import read_dat
 
 CASES = Path(__file__).resolve().parent.parent / "reference_cases"
-CASE03 = CASES / "case03_macoma_carbonate"
-CASE04 = CASES / "case04_macoma_ta_dic"
+CASE03 = CASES / "case03_carbonate"
+CASE04 = CASES / "case04_ta_dic"
 
 #: The exe's own dialog selections for both carbonate cases.
 EXE_K1K2 = 10
@@ -405,8 +405,8 @@ def _plume_state(case: Path, dat_name: str) -> dict[str, np.ndarray]:
     chemistry and only the tables and the `.dat` came out.
     """
     nearfield = read_dat(case / dat_name).nearfield
-    effluent = read_csv_table(case / "macoma2effluent.csv")
-    ambient = read_csv_table(case / "macoma2ambient.csv")
+    effluent = read_csv_table(case / "effluent.csv")
+    ambient = read_csv_table(case / "ambient.csv")
     effluent_row = next(iter(effluent.active_rows())).values
     effluent_salinity = effluent_row[effluent.column_names.index("salinity")]
     effluent_temperature = effluent_row[effluent.column_names.index("temperature")]
@@ -646,6 +646,33 @@ def test_the_nbs_scale_is_refused_with_its_reason() -> None:
     solved = solve_from_alkalinity_dic(2300.0, 2000.0, 33.0, 12.0)
     with pytest.raises(ValueError, match="NBS"):
         solved.ph(PHScale.NBS)
+
+
+def test_alkalinity_for_ph_is_the_design_direction() -> None:
+    """From (DIC, pH) to TA, and back through the model's own (TA, DIC) solve to the same pH.
+
+    The direction an operator specifies an effluent in -- "this water, dosed to pH 9.8" -- which
+    neither `solve_from_*` offers. At DIC 0 the answer is all hydroxide: ~10^(pH - pKw) with the
+    pure-water pKw of ~14.5 at 11 C, so pH 12 needs ~3.2 mmol/kg, not the 10 mmol/kg a pKw of 14
+    would say. And the `(TA, pH)` statement of that same effluent is ill-conditioned: DIC is the
+    difference of two nearly equal numbers, so a TA one umol/kg low hands back NaN -- which is
+    why the study states pure-water effluents as `(TA, DIC 0)`.
+    """
+    from plumes2.chem import alkalinity_for_ph
+
+    ta = float(alkalinity_for_ph(2500.0, 9.8, 30.9, 11.2))
+    assert 4500.0 < ta < 5200.0
+    back = solve_from_alkalinity_dic(ta, 2500.0, 30.9, 11.2)
+    assert float(back.ph_total) == pytest.approx(9.8, abs=1e-6)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        hydroxide_only = float(alkalinity_for_ph(0.0, 12.0, 0.0, 11.2))
+        assert hydroxide_only == pytest.approx(3200.0, rel=0.05)
+        degenerate = solve_from_alkalinity_ph(
+            hydroxide_only - 1.0, 12.0, 0.0, 11.2, ph_scale=PHScale.TOTAL
+        )
+    assert not np.isfinite(float(degenerate.dic))
 
 
 def test_solving_from_ph_round_trips_through_dic() -> None:

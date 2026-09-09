@@ -8,7 +8,7 @@ These sit at **F ≈ 0.003**, three orders of magnitude below it. All three fail
 
 ## ⚠️ The `.prj` does not describe these runs
 
-`Macoma2.prj` was saved with a port diameter of **0.013 m**; the runs used **0.5 m**. The project
+`project.prj` was saved with a port diameter of **0.013 m**; the runs used **0.5 m**. The project
 file was not re-saved after the diameter was changed, so it is the `.dat` **echo** that is
 authoritative here, and the diameter is the one input the echo happens to carry losslessly.
 
@@ -25,7 +25,7 @@ the echo would be 2× out.
 | effluent temperature | 10 °C | 10 | 10 |
 | port depth | 2.0 m | 2.0 | 2.0 |
 
-Everything else is the Macoma baseline: ambient ~31 psu, 9–11 °C over 15 m.
+Everything else is the archived-diffuser baseline: ambient ~31 psu, 9–11 °C over 15 m.
 
 ## The regime
 
@@ -75,8 +75,15 @@ the strongest justification the design check has.
 
 ## Still open
 
-- **A sub-critical run that does *not* surface**, e.g. a dense effluent so buoyancy drives it down
-  onto the seabed rather than up. That would separate "sub-critical is unusable" from "leaving the
-  water column is unusable", which these three cannot.
+- ✅ *Closed 2026-09-02* — **a sub-critical run that does not surface** exists and is finite end
+  to end: [case54](../case54_subcritical_sinks/README.md) (this discharge at 45 psu, F ≈ 0.0044,
+  sinks to 5.3 m and traps; zero NaN over 948 rows). So the separation is made: **the NaN cliff
+  is the missing surface clamp, not sub-criticality** (ledger row 285). ⚠️ Its trace turned out
+  to be byte-identical to case34's `L2.0_d0.50.dat` from 2026-08-19 — the evidence had been
+  archived, unread as such, for two weeks.
 - ⚠️ **Re-save the `.prj` at run time.** These three are interpretable only because the port
   diameter survives the echo; a second changed field would have made them ambiguous.
+
+## Names (2026-09-09)
+
+The exe wrote these files under the names on the left; renamed the same day, contents byte-identical (the `.dat` header still echoes the original project title): `Macoma2.prj` → `project.prj`.

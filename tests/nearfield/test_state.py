@@ -21,14 +21,14 @@ from plumes2.nearfield import (
 )
 
 CASES = Path(__file__).resolve().parents[2] / "reference_cases"
-MACOMA_PRJ = CASES / "case01_macoma_cms" / "Macoma2.prj"
+ARCHIVE_PRJ = CASES / "case01_cms" / "project.prj"
 TEST19 = CASES / "case16_oldbuild_angle_sweep" / "test19.dat"
 ZERO_CURRENT = CASES / "case18_zero_current_pair"
 
 
 @pytest.fixture
-def macoma_case():  # type: ignore[no-untyped-def]
-    return load_project(MACOMA_PRJ, warn_on_drift=False).to_case()
+def archive_case():  # type: ignore[no-untyped-def]
+    return load_project(ARCHIVE_PRJ, warn_on_drift=False).to_case()
 
 
 # ------------------------------------------------------------------ conventions
@@ -77,27 +77,27 @@ def test_speed_is_preserved_by_the_angle_decomposition() -> None:
 # ------------------------------------------------------------------- initial state
 
 
-def test_exit_speed_uses_the_contracted_area(macoma_case) -> None:  # type: ignore[no-untyped-def]
-    """Macoma: 0.005 m3/s through 25 ports of 0.0127 m, contracted by 0.61."""
-    geometric = macoma_case.effluent.flow / (
-        macoma_case.diffuser.n_ports * math.pi * (macoma_case.diffuser.port_diameter / 2) ** 2
+def test_exit_speed_uses_the_contracted_area(archive_case) -> None:  # type: ignore[no-untyped-def]
+    """The archived diffuser: 0.005 m3/s through 25 ports of 0.0127 m, contracted by 0.61."""
+    geometric = archive_case.effluent.flow / (
+        archive_case.diffuser.n_ports * math.pi * (archive_case.diffuser.port_diameter / 2) ** 2
     )
     assert geometric == pytest.approx(1.5788, abs=1e-4)
-    assert exit_speed(macoma_case) == pytest.approx(geometric / 0.61, rel=1e-9)
+    assert exit_speed(archive_case) == pytest.approx(geometric / 0.61, rel=1e-9)
 
 
-def test_the_contraction_coefficient_scales_area_so_radius_carries_its_root(macoma_case) -> None:  # type: ignore[no-untyped-def]
+def test_the_contraction_coefficient_scales_area_so_radius_carries_its_root(archive_case) -> None:  # type: ignore[no-untyped-def]
     """Measured from test23 vs test25, which differ only in `c`."""
-    assert macoma_case.near_field.contraction_coefficient == pytest.approx(0.61)
-    port_radius = macoma_case.diffuser.port_diameter / 2.0
-    assert initial_radius(macoma_case) == pytest.approx(port_radius * math.sqrt(0.61))
+    assert archive_case.near_field.contraction_coefficient == pytest.approx(0.61)
+    port_radius = archive_case.diffuser.port_diameter / 2.0
+    assert initial_radius(archive_case) == pytest.approx(port_radius * math.sqrt(0.61))
     # The jet area is exactly c times the port area.
-    assert math.pi * initial_radius(macoma_case) ** 2 == pytest.approx(
+    assert math.pi * initial_radius(archive_case) ** 2 == pytest.approx(
         0.61 * math.pi * port_radius**2
     )
 
 
-def test_the_thickness_constant_is_independent_of_contraction(macoma_case) -> None:  # type: ignore[no-untyped-def]
+def test_the_thickness_constant_is_independent_of_contraction(archive_case) -> None:  # type: ignore[no-untyped-def]
     """`b_0^2 rho_e |U_0| = rho_e Q / (n pi)`: the `sqrt(c)` and `1/c` cancel.
 
     This is why test23 and test25 measure thickness constants 0.25 % apart despite a 64 %
@@ -106,9 +106,9 @@ def test_the_thickness_constant_is_independent_of_contraction(macoma_case) -> No
     """
     expected = None
     for contraction in (0.2, 0.61, 1.0):
-        case = macoma_case.model_copy(
+        case = archive_case.model_copy(
             update={
-                "near_field": macoma_case.near_field.model_copy(
+                "near_field": archive_case.near_field.model_copy(
                     update={"contraction_coefficient": contraction}
                 )
             }
@@ -116,9 +116,7 @@ def test_the_thickness_constant_is_independent_of_contraction(macoma_case) -> No
         state, geometry = initial_state(case)
         radius = float(geometry.radius(state.mass, state.density(), state.speed))
         constant = radius**2 * state.density() * state.speed
-        closed_form = (
-            state.density() * case.effluent.flow / (case.diffuser.n_ports * math.pi)
-        )
+        closed_form = state.density() * case.effluent.flow / (case.diffuser.n_ports * math.pi)
         assert constant == pytest.approx(closed_form, rel=1e-9)
         if expected is None:
             expected = constant
@@ -126,21 +124,21 @@ def test_the_thickness_constant_is_independent_of_contraction(macoma_case) -> No
             assert constant == pytest.approx(expected, rel=1e-9)
 
 
-def test_initial_state_sits_at_the_port(macoma_case) -> None:  # type: ignore[no-untyped-def]
-    state, geometry = initial_state(macoma_case)
+def test_initial_state_sits_at_the_port(archive_case) -> None:  # type: ignore[no-untyped-def]
+    state, geometry = initial_state(archive_case)
     assert state.position[2] == pytest.approx(-2.0), "z is elevation, negative below surface"
     assert state.depth == pytest.approx(2.0)
     assert state.salinity == pytest.approx(35.0)
     assert state.temperature == pytest.approx(10.0)
-    assert state.speed == pytest.approx(exit_speed(macoma_case))
+    assert state.speed == pytest.approx(exit_speed(archive_case))
     assert geometry.dilution(state.mass) == pytest.approx(1.0)
 
 
-def test_the_geometry_reproduces_the_initial_radius(macoma_case) -> None:  # type: ignore[no-untyped-def]
+def test_the_geometry_reproduces_the_initial_radius(archive_case) -> None:  # type: ignore[no-untyped-def]
     """The algebraic radius must return `b_0` when evaluated at the port state."""
-    state, geometry = initial_state(macoma_case)
+    state, geometry = initial_state(archive_case)
     radius = geometry.radius(state.mass, state.density(), state.speed)
-    assert float(radius) == pytest.approx(initial_radius(macoma_case))
+    assert float(radius) == pytest.approx(initial_radius(archive_case))
 
 
 @pytest.mark.golden
@@ -213,11 +211,11 @@ def test_the_diffuser_echo_rounds_to_two_decimals() -> None:
     assert float(read_dat(ZERO_CURRENT / "test21.dat").nearfield["P-dia"].iloc[0]) < 0.0125
 
 
-def test_the_arbitrary_element_thickness_cancels(macoma_case) -> None:  # type: ignore[no-untyped-def]
+def test_the_arbitrary_element_thickness_cancels(archive_case) -> None:  # type: ignore[no-untyped-def]
     """Only h_0 together with m_e matters, so the reported geometry must not depend on it."""
     reference = None
     for thickness in (0.001, 0.00635, 1.0, 25.0):
-        state, geometry = initial_state(macoma_case, element_thickness=thickness)
+        state, geometry = initial_state(archive_case, element_thickness=thickness)
         radius = float(geometry.radius(state.mass, state.density(), state.speed))
         dilution = float(geometry.dilution(state.mass))
         assert dilution == pytest.approx(1.0)
@@ -226,16 +224,16 @@ def test_the_arbitrary_element_thickness_cancels(macoma_case) -> None:  # type: 
         else:
             assert radius == pytest.approx(reference, rel=1e-12)
     # The thickness itself does scale, as it must.
-    _, thin = initial_state(macoma_case, element_thickness=0.001)
-    _, thick = initial_state(macoma_case, element_thickness=1.0)
+    _, thin = initial_state(archive_case, element_thickness=0.001)
+    _, thick = initial_state(archive_case, element_thickness=1.0)
     assert thick.effluent_mass / thin.effluent_mass == pytest.approx(1000.0)
 
 
 # ----------------------------------------------------------------------- geometry
 
 
-def test_pack_and_unpack_round_trip(macoma_case) -> None:  # type: ignore[no-untyped-def]
-    state, _ = initial_state(macoma_case)
+def test_pack_and_unpack_round_trip(archive_case) -> None:  # type: ignore[no-untyped-def]
+    state, _ = initial_state(archive_case)
     packed = state.pack()
     assert packed.shape == (STATE_SIZE,)
     recovered = unpack(packed)
@@ -247,7 +245,7 @@ def test_pack_and_unpack_round_trip(macoma_case) -> None:  # type: ignore[no-unt
 
 
 def test_unpack_rejects_a_wrong_length_vector() -> None:
-    with pytest.raises(ValueError, match="length 9"):
+    with pytest.raises(ValueError, match="length 10"):
         unpack(np.zeros(7))
 
 
@@ -256,9 +254,9 @@ def test_unpack_rejects_non_positive_mass() -> None:
         unpack(np.zeros(STATE_SIZE))
 
 
-def test_thickness_and_radius_are_mutually_consistent(macoma_case) -> None:  # type: ignore[no-untyped-def]
+def test_thickness_and_radius_are_mutually_consistent(archive_case) -> None:  # type: ignore[no-untyped-def]
     """m = rho_j pi b^2 h must hold for whatever pair the geometry returns."""
-    state, geometry = initial_state(macoma_case)
+    state, geometry = initial_state(archive_case)
     for mass_factor, speed in ((1.0, 1.5788), (7.0, 0.4), (350.0, 0.02)):
         mass = state.mass * mass_factor
         plume_density = 1024.0
@@ -267,22 +265,22 @@ def test_thickness_and_radius_are_mutually_consistent(macoma_case) -> None:  # t
         assert plume_density * math.pi * b * b * h == pytest.approx(mass, rel=1e-10)
 
 
-def test_radius_grows_with_mass_and_shrinks_with_speed(macoma_case) -> None:  # type: ignore[no-untyped-def]
+def test_radius_grows_with_mass_and_shrinks_with_speed(archive_case) -> None:  # type: ignore[no-untyped-def]
     """b^2 proportional to m / (rho |U|): more mass widens, more speed stretches instead."""
-    state, geometry = initial_state(macoma_case)
+    state, geometry = initial_state(archive_case)
     base = float(geometry.radius(state.mass, 1024.0, 1.0))
     assert float(geometry.radius(4.0 * state.mass, 1024.0, 1.0)) == pytest.approx(2.0 * base)
     assert float(geometry.radius(state.mass, 1024.0, 4.0)) == pytest.approx(base / 2.0)
 
 
-def test_radius_refuses_zero_speed(macoma_case) -> None:  # type: ignore[no-untyped-def]
-    state, geometry = initial_state(macoma_case)
+def test_radius_refuses_zero_speed(archive_case) -> None:  # type: ignore[no-untyped-def]
+    state, geometry = initial_state(archive_case)
     with pytest.raises(ValueError, match="zero speed"):
         geometry.radius(state.mass, 1024.0, 0.0)
 
 
-def test_geometry_is_vectorised(macoma_case) -> None:  # type: ignore[no-untyped-def]
-    state, geometry = initial_state(macoma_case)
+def test_geometry_is_vectorised(archive_case) -> None:  # type: ignore[no-untyped-def]
+    state, geometry = initial_state(archive_case)
     radii = geometry.radius(
         np.array([1.0, 4.0, 9.0]) * state.mass, 1024.0, np.array([1.0, 1.0, 1.0])
     )

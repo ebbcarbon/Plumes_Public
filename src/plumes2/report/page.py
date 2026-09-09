@@ -33,7 +33,7 @@ from plumes2.report.palette import (
 )
 from plumes2.report.panels import Panel
 
-__all__ = ["Header", "render_page"]
+__all__ = ["Header", "format_value", "render_page"]
 
 _STYLE = f"""
 :root {{
@@ -132,24 +132,29 @@ class Header:
     caveats: tuple[str, ...] = field(default_factory=tuple)
 
 
-def _format(value: object) -> str:
-    """A number a person can read: four significant figures, and no `1.0000000000000002`.
+def format_value(value: object) -> str:
+    """A table cell a person can read: four significant figures, and no `1.0000000000000002`.
 
     The full-precision values live in the CSVs. A table in a report is for reading, and fifteen
-    digits of a float is not a number anyone reads.
+    digits of a float is not a number anyone reads. Shared by the HTML and the PDF renderers so
+    the two tables agree to the digit; the HTML escapes the result on top.
     """
     if isinstance(value, bool):
         return "yes" if value else "no"
     if isinstance(value, float):
         if value != value:  # NaN
-            return "&mdash;"
+            return "\N{EM DASH}"
         magnitude = abs(value)
         if magnitude and (magnitude >= 1e5 or magnitude < 1e-3):
             return f"{value:.3e}"
         return f"{value:,.4g}"
     if isinstance(value, int):
         return f"{value:,}"
-    return escape(str(value))
+    return str(value)
+
+
+def _format(value: object) -> str:
+    return escape(format_value(value))
 
 
 def _table_html(table: pd.DataFrame) -> str:
@@ -209,10 +214,7 @@ def render_page(header: Header, panels: list[Panel], *, footer: str) -> str:
     caveats = ""
     if header.caveats:
         items = "".join(f"<li>{escape(note)}</li>" for note in header.caveats)
-        caveats = (
-            "<div class='caveats'><h3>Read these first</h3>"
-            f"<ul>{items}</ul></div>"
-        )
+        caveats = f"<div class='caveats'><h3>Read these first</h3><ul>{items}</ul></div>"
     contents = "".join(
         f"<li><a href='#{escape(panel.key)}'>{escape(panel.title)}</a></li>" for panel in panels
     )

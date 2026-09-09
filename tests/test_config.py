@@ -32,7 +32,7 @@ from plumes2.config import (
 )
 
 
-def macoma_diffuser(**overrides: object) -> Diffuser:
+def archive_diffuser(**overrides: object) -> Diffuser:
     defaults: dict[str, object] = {
         "port_diameter": 0.0127,
         "port_elevation": 1.0,
@@ -45,7 +45,7 @@ def macoma_diffuser(**overrides: object) -> Diffuser:
     return Diffuser(**{**defaults, **overrides})  # type: ignore[arg-type]
 
 
-def macoma_ambient(max_depth: float = 15.0) -> AmbientProfile:
+def archive_ambient(max_depth: float = 15.0) -> AmbientProfile:
     return AmbientProfile(
         levels=[
             AmbientLevel(
@@ -56,12 +56,12 @@ def macoma_ambient(max_depth: float = 15.0) -> AmbientProfile:
     )
 
 
-def macoma_case(**overrides: object) -> Case:
+def archive_case(**overrides: object) -> Case:
     defaults: dict[str, object] = {
-        "diffuser": macoma_diffuser(),
+        "diffuser": archive_diffuser(),
         "effluent": Effluent(flow=0.005, salinity=45.0, temperature=10.0, pollutant=1e5),
         "mixing_zone": MixingZone(acute_distance=20.7, chronic_distance=207.0),
-        "ambient": macoma_ambient(),
+        "ambient": archive_ambient(),
     }
     return Case(**{**defaults, **overrides})  # type: ignore[arg-type]
 
@@ -69,21 +69,21 @@ def macoma_case(**overrides: object) -> Case:
 class TestDerivedGeometry:
     def test_bottom_depth_is_port_depth_plus_elevation(self) -> None:
         """case10: a 2.0 m port on a 1.0 m riser terminated against a 3.0 m seabed."""
-        assert macoma_diffuser().bottom_depth == pytest.approx(3.0)
+        assert archive_diffuser().bottom_depth == pytest.approx(3.0)
 
     def test_diffuser_length_and_single_port_degeneracy(self) -> None:
-        assert macoma_diffuser().diffuser_length == pytest.approx(24 * 0.60)
-        assert macoma_diffuser(n_ports=1).diffuser_length == 0.0
+        assert archive_diffuser().diffuser_length == pytest.approx(24 * 0.60)
+        assert archive_diffuser(n_ports=1).diffuser_length == 0.0
 
     def test_wastefield_width_matches_case10(self) -> None:
         """24 * 0.60 + 1.225 = 15.625, printed as 15.62. Discharge parallel to current."""
-        assert macoma_diffuser().wastefield_width(1.225, 90.0) == pytest.approx(15.625)
+        assert archive_diffuser().wastefield_width(1.225, 90.0) == pytest.approx(15.625)
 
     def test_wastefield_width_matches_case11_single_port(self) -> None:
-        assert macoma_diffuser(n_ports=1).wastefield_width(1.451, 90.0) == pytest.approx(1.451)
+        assert archive_diffuser(n_ports=1).wastefield_width(1.451, 90.0) == pytest.approx(1.451)
 
     def test_wastefield_width_matches_case02(self) -> None:
-        wide = macoma_diffuser(n_ports=25, port_spacing=2.0)
+        wide = archive_diffuser(n_ports=25, port_spacing=2.0)
         assert wide.wastefield_width(0.558, 90.0) == pytest.approx(48.558)
 
 
@@ -91,64 +91,64 @@ class TestEffectiveSpacing:
     """The oblique-angle correction, decoded from a project we generated and ran."""
 
     def test_parallel_discharge_and_current_gives_full_spacing(self) -> None:
-        """Every Macoma case: 90 degree ports into a 90 degree current."""
-        assert macoma_diffuser().effective_spacing(90.0) == pytest.approx(0.60)
+        """Every archived-diffuser case: 90 degree ports into a 90 degree current."""
+        assert archive_diffuser().effective_spacing(90.0) == pytest.approx(0.60)
 
     def test_thirty_degrees_gives_the_cosine(self) -> None:
         """The upstream example geometry: 30 degree ports into a zero-degree current."""
-        example = macoma_diffuser(n_ports=18, port_spacing=6.10, horizontal_angle=30.0)
+        example = archive_diffuser(n_ports=18, port_spacing=6.10, horizontal_angle=30.0)
         assert example.effective_spacing(0.0) == pytest.approx(6.10 * math.cos(math.radians(30)))
         # 17 * 6.10 * cos(30) + 6.481 = 96.288, printed 96.29 by the current exe build.
         assert example.wastefield_width(6.481, 0.0) == pytest.approx(96.288, abs=0.005)
 
     def test_perpendicular_collapses_the_spacing(self) -> None:
         """Unverified against the exe -- no run has a 90 degree offset."""
-        example = macoma_diffuser(horizontal_angle=90.0)
+        example = archive_diffuser(horizontal_angle=90.0)
         assert example.effective_spacing(0.0) == pytest.approx(0.0, abs=1e-12)
 
     def test_case_level_helper_uses_the_ambient_current(self) -> None:
-        case = macoma_case()
+        case = archive_case()
         assert case.current_direction_at_port == pytest.approx(90.0)
         assert case.wastefield_width(1.225) == pytest.approx(15.625)
 
     def test_port_area(self) -> None:
-        assert macoma_diffuser().port_area == pytest.approx(math.pi * (0.0127 / 2) ** 2)
+        assert archive_diffuser().port_area == pytest.approx(math.pi * (0.0127 / 2) ** 2)
 
 
 class TestExitVelocity:
     def test_reproduces_the_case09_failure_condition(self) -> None:
         """39.5 m/s through one port -- the plume left the water surface."""
-        diffuser = macoma_diffuser(n_ports=1)
+        diffuser = archive_diffuser(n_ports=1)
         effluent = Effluent(flow=0.005, salinity=35.0, temperature=10.0)
         assert effluent.exit_velocity(diffuser) == pytest.approx(39.5, abs=0.5)
 
     def test_and_the_case11_fix(self) -> None:
-        diffuser = macoma_diffuser(n_ports=1)
+        diffuser = archive_diffuser(n_ports=1)
         assert Effluent(flow=5e-5).exit_velocity(diffuser) == pytest.approx(0.39, abs=0.01)
 
     def test_25_ports_share_the_flow(self) -> None:
-        assert macoma_case().exit_velocity == pytest.approx(1.58, abs=0.02)
+        assert archive_case().exit_velocity == pytest.approx(1.58, abs=0.02)
 
 
 class TestValidation:
     def test_single_port_is_allowed(self) -> None:
-        assert macoma_diffuser(n_ports=1).n_ports == 1
+        assert archive_diffuser(n_ports=1).n_ports == 1
 
     def test_zero_ports_is_rejected(self) -> None:
         with pytest.raises(ValidationError):
-            macoma_diffuser(n_ports=0)
+            archive_diffuser(n_ports=0)
 
     def test_negative_diameter_is_rejected(self) -> None:
         with pytest.raises(ValidationError):
-            macoma_diffuser(port_diameter=-1.0)
+            archive_diffuser(port_diameter=-1.0)
 
     def test_extra_fields_are_rejected(self) -> None:
         with pytest.raises(ValidationError):
-            macoma_diffuser(typo_field=1.0)
+            archive_diffuser(typo_field=1.0)
 
     def test_model_is_frozen(self) -> None:
         with pytest.raises(ValidationError):
-            macoma_diffuser().port_depth = 5.0  # type: ignore[misc]
+            archive_diffuser().port_depth = 5.0  # type: ignore[misc]
 
     def test_acute_beyond_chronic_is_rejected(self) -> None:
         with pytest.raises(ValidationError, match="farther than the"):
@@ -259,13 +259,13 @@ class TestCarbonateSettings:
 
 class TestCaseLevelChecks:
     def test_chemistry_needs_both_endmembers(self) -> None:
-        case = macoma_case()
+        case = archive_case()
         assert not case.chemistry_enabled
 
-        with_chem = macoma_case(
+        with_chem = archive_case(
             effluent_chemistry=EffluentChemistry(total_alkalinity=4000.0, dic=1646.0),
             ambient=AmbientProfile(
-                levels=macoma_ambient().levels,
+                levels=archive_ambient().levels,
                 chemistry=[
                     AmbientChemistryLevel(depth=1.0, total_alkalinity=3000.0, dic=2500.0),
                     AmbientChemistryLevel(depth=4.0, total_alkalinity=2850.0, dic=2450.0),
@@ -275,25 +275,25 @@ class TestCaseLevelChecks:
         assert with_chem.chemistry_enabled
 
     def test_seabed_beyond_the_ambient_profile_warns(self) -> None:
-        """The shape of every Macoma project: 2 m port on a 15 m riser, 15 m profile."""
+        """The shape of every archived-diffuser project: 2 m port on a 15 m riser, 15 m profile."""
         with pytest.warns(GeometryWarning, match="ambient profile"):
-            macoma_case(diffuser=macoma_diffuser(port_elevation=15.0))
+            archive_case(diffuser=archive_diffuser(port_elevation=15.0))
 
     def test_a_consistent_geometry_is_silent(self) -> None:
         import warnings as w
 
         with w.catch_warnings():
             w.simplefilter("error")
-            macoma_case()  # bottom at 3.0 m, profile to 15 m
+            archive_case()  # bottom at 3.0 m, profile to 15 m
 
     def test_chemistry_profile_starting_below_the_port_warns(self) -> None:
         """Extrapolating past the shallow end is what broke case09's transport. The exe
         checks only the deep end, so this is a warning -- see TestChemistryDepthRule."""
         with pytest.warns(GeometryWarning, match="starts at"):
-            macoma_case(
+            archive_case(
                 effluent_chemistry=EffluentChemistry(total_alkalinity=4000.0, dic=1646.0),
                 ambient=AmbientProfile(
-                    levels=macoma_ambient().levels,
+                    levels=archive_ambient().levels,
                     chemistry=[
                         AmbientChemistryLevel(depth=5.0, total_alkalinity=3000.0, dic=2500.0),
                         AmbientChemistryLevel(depth=9.0, total_alkalinity=2850.0, dic=2450.0),
@@ -318,11 +318,11 @@ class TestChemistryDepthRule:
 
     @staticmethod
     def _case_with_chemistry(depths: list[float], port_depth: float) -> Case:
-        return macoma_case(
-            diffuser=macoma_diffuser(port_depth=port_depth, port_elevation=1.0),
+        return archive_case(
+            diffuser=archive_diffuser(port_depth=port_depth, port_elevation=1.0),
             effluent_chemistry=EffluentChemistry(total_alkalinity=4000.0, dic=1646.0),
             ambient=AmbientProfile(
-                levels=macoma_ambient().levels,
+                levels=archive_ambient().levels,
                 chemistry=[
                     AmbientChemistryLevel(depth=d, total_alkalinity=3000.0, dic=2500.0)
                     for d in depths
@@ -351,17 +351,13 @@ class TestChemistryDepthRule:
 
     def test_the_rule_only_applies_when_chemistry_is_enabled(self) -> None:
         """No effluent endmember means no chemistry run, so no constraint."""
-        case = macoma_case(diffuser=macoma_diffuser(port_depth=11.0, port_elevation=1.0))
+        case = archive_case(diffuser=archive_diffuser(port_depth=11.0, port_elevation=1.0))
         assert not case.chemistry_enabled
 
     def test_shallow_end_still_only_warns(self) -> None:
         """The exe checks only the deep end; the shallow end broke case09 but is legal."""
         with pytest.warns(GeometryWarning, match="starts at"):
             self._case_with_chemistry([5.0, 9.0], port_depth=2.0)
-
-
-
-
 
 
 # ------------------------------------------------------------------ the Froude design check
@@ -373,8 +369,13 @@ def _case_with(**overrides):  # type: ignore[no-untyped-def]
 
     spec = {
         "diffuser": {
-            "port_diameter": 0.1, "port_elevation": 1.0, "vertical_angle": 0.0,
-            "horizontal_angle": 90.0, "n_ports": 1, "port_spacing": 1.0, "port_depth": 10.0,
+            "port_diameter": 0.1,
+            "port_elevation": 1.0,
+            "vertical_angle": 0.0,
+            "horizontal_angle": 90.0,
+            "n_ports": 1,
+            "port_spacing": 1.0,
+            "port_depth": 10.0,
         },
         "effluent": {"flow": 0.5, "salinity": 0.0, "temperature": 20.0},
         "ambient": {
@@ -449,19 +450,27 @@ class TestTheExeBuildSelector:
 
     def test_the_default_keeps_the_cosine(self) -> None:
         example = Diffuser(
-            port_diameter=0.0762, port_elevation=0.31, vertical_angle=45.0,
-            horizontal_angle=30.0, n_ports=18, port_spacing=6.10, port_depth=11.0,
+            port_diameter=0.0762,
+            port_elevation=0.31,
+            vertical_angle=45.0,
+            horizontal_angle=30.0,
+            n_ports=18,
+            port_spacing=6.10,
+            port_depth=11.0,
         )
         assert example.wastefield_width(6.481, 0.0) == pytest.approx(96.288, abs=0.005)
-        assert example.effective_spacing(0.0) == pytest.approx(
-            6.10 * math.cos(math.radians(30))
-        )
+        assert example.effective_spacing(0.0) == pytest.approx(6.10 * math.cos(math.radians(30)))
 
     def test_legacy_drops_it_entirely(self) -> None:
         """`(n-1) * L + diameter`, with no angular factor -- and the 13.30 m gap it explains."""
         example = Diffuser(
-            port_diameter=0.0762, port_elevation=0.31, vertical_angle=45.0,
-            horizontal_angle=30.0, n_ports=18, port_spacing=6.10, port_depth=11.0,
+            port_diameter=0.0762,
+            port_elevation=0.31,
+            vertical_angle=45.0,
+            horizontal_angle=30.0,
+            n_ports=18,
+            port_spacing=6.10,
+            port_depth=11.0,
         )
         legacy = example.wastefield_width(6.481, 0.0, build=ExeBuild.LEGACY)
         assert legacy == pytest.approx(17 * 6.10 + 6.481)
@@ -472,8 +481,13 @@ class TestTheExeBuildSelector:
     def test_the_two_agree_when_the_diffuser_faces_the_current(self) -> None:
         """At a zero offset the cosine is 1, so the selector is inert -- most of the archive."""
         square = Diffuser(
-            port_diameter=0.0127, port_elevation=15.0, vertical_angle=45.0,
-            horizontal_angle=90.0, n_ports=25, port_spacing=2.0, port_depth=2.0,
+            port_diameter=0.0127,
+            port_elevation=15.0,
+            vertical_angle=45.0,
+            horizontal_angle=90.0,
+            n_ports=25,
+            port_spacing=2.0,
+            port_depth=2.0,
         )
         for build in ExeBuild:
             assert square.wastefield_width(0.558, 90.0, build=build) == pytest.approx(48.558)
@@ -481,15 +495,14 @@ class TestTheExeBuildSelector:
     def test_a_case_follows_its_far_field_setting(self) -> None:
         """The selector is persisted, so a legacy comparison is a property of the case.
 
-        Uses an oblique diffuser, because at the Macoma geometry's zero offset the two laws are
+        Uses an oblique diffuser: at the archived-diffuser geometry's zero offset the two laws are
         identical and the test would pass without measuring anything.
         """
-        case = macoma_case(
-            diffuser=macoma_diffuser(horizontal_angle=30.0, n_ports=18, port_spacing=6.10)
+        case = archive_case(
+            diffuser=archive_diffuser(horizontal_angle=30.0, n_ports=18, port_spacing=6.10)
         )
         legacy = case.model_copy(
-            update={"far_field": case.far_field.model_copy(
-                update={"exe_build": ExeBuild.LEGACY})}
+            update={"far_field": case.far_field.model_copy(update={"exe_build": ExeBuild.LEGACY})}
         )
         assert case.far_field.exe_build is ExeBuild.CURRENT
         # The ambient current runs at 90 deg here, so the offset is 60 deg and the factor is 0.5.

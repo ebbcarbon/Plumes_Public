@@ -5,7 +5,7 @@ Run 2026-08-19 to test the one lever case35 left standing: port depth. It does n
 "lag" is not one number with a hidden argument. It is **three distinct behaviours**.
 
 `limspc_mid`'s geometry throughout: **one port at 0.20 m**, 0.005 m³/s, downward at −45°, output
-interval 1, into the Macoma ambient.
+interval 1, into the case03 ambient.
 
 | run | port depth | effluent | first trap | `d >` depth | first local max | banner | lag past `max(trap, cross)` | fires |
 |---|---|---|---|---|---|---|---|---|

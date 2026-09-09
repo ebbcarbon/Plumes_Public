@@ -4,8 +4,9 @@ Round 1 (case51) settled *ownership* of every undecoded `.prj` flag but not *ide
 reconnaissance step (note which GUI control differs on load) was not recorded, and the operator
 does not recall (2026-09-01). This generates the second pass:
 
-1. **`flagdecode2_bottomhit` / `flagdecode2_bottomhit_nf1`** -- a dense pair on the Macoma
-   geometry with the port dropped to 10 m over an 11 m seabed, so the plume *hits the bottom*.
+1. **`flagdecode2_bottomhit` / `flagdecode2_bottomhit_nf1`** -- a dense pair on the archived
+   diffuser geometry with the port dropped to 10 m over an 11 m seabed, so the plume *hits the
+   bottom*.
    If near-field flag 1 is the stop-at-bottom box (the natural candidate: ticked-by-default in
    every archived project, and position 2 is already the surface box), the flipped arm runs
    past seabed contact the way case06 runs past the surface. Recall not required: the traces
@@ -88,7 +89,7 @@ and ff 6 file-owned, inert on a surfacing run), 282 (nf 3 = 1 is fatal) -- all i
 
 
 def bottomhit_case():
-    """The Macoma geometry, chemistry stripped, aimed down at a seabed one metre below.
+    """The archived-diffuser geometry, chemistry stripped, aimed down at a seabed one metre below.
 
     ⚠️ The first two cuts of this did not hit: fired 45 degrees up from 10 m over an 11 m
     seabed the plume traps (`oscillation limit`), and even aimed straight down at Ebb's gentle
@@ -186,9 +187,7 @@ def main() -> None:
     for name, attribute, index in RECON_FLIPS:
         flags = list(getattr(template, attribute))
         flags[index] = 1 - flags[index]
-        write_prj(
-            dataclasses.replace(template, **{attribute: flags}), recon / f"recon_{name}.prj"
-        )
+        write_prj(dataclasses.replace(template, **{attribute: flags}), recon / f"recon_{name}.prj")
     (recon / "README.md").write_text(RECON_CHECKLIST, encoding="utf-8")
     print(f"wrote {recon} (9 projects + checklist; NO RUNS)")
 

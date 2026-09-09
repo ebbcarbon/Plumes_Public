@@ -169,7 +169,8 @@ def _measured(path):  # type: ignore[no-untyped-def]
     if "CL-Dil" not in frame.columns or "Diffuser" not in dat.echoed_tables:
         return None
     diffuser = dat.echoed_tables["Diffuser"].iloc[0]
-    spacing = float(diffuser["Spacing"])
+    # In metres whatever unit the echo flags (case55's 2 ft echoes as `2.0 (ft)`).
+    spacing = float(dat.echoed_port_spacing or 0.0)
     ports = int(float(diffuser["Ports"]))
     merged_at = next(
         (e.next_step for e in dat.events if "merg" in e.text.lower() and e.next_step is not None),
@@ -290,7 +291,12 @@ def test_the_blend_reproduces_the_merged_archive_and_only_the_onset_ramp_escapes
     # profiles and are skipped by `_measured`.
     # 8183 -> 8207 on 2026-09-01: case51's flag-decode traces (six on the merging upstream-example
     # geometry, interval 5, four merged rows each before the surface). The law held on every one.
-    assert len(rows) == 8207, "the merged archive changed size"
+    # 8207 -> 8347 on 2026-09-02: case54's subcritical_sinks_legacy.dat adds 140 merged rows. ⚠️ It
+    # is byte-identical to case34's L2.0_d0.50.dat (the determinism repeat, ledger 285 / 191c), so
+    # the archive genuinely carries the same merged trace twice and these are those rows again.
+    # 8347 -> 8356 on 2026-09-09: case55's two site arms (interval 5, the 2 ft site spacing) add
+    # 7 + 2 merged rows before their ends.
+    assert len(rows) == 8356, "the merged archive changed size"
 
     residuals = _residuals(rows)
     fits = [(row, error) for row, error in residuals if abs(error) <= row["tolerance"]]
@@ -301,8 +307,16 @@ def test_the_blend_reproduces_the_merged_archive_and_only_the_onset_ramp_escapes
     # the onset climb and still land at d/L <= 1.012, so this is more evidence, not weaker.
     # +6 on 2026-08-26, the case46 prj-pair rows; +24 on 2026-09-01, case51's flag-decode rows.
     # Misses unchanged both times: every new row is a fit.
-    assert len(fits) == 7597
-    assert len(misses) == 610
+    # 7597/610 -> 7736/611 on 2026-09-02, case54's subcritical_sinks_legacy.dat -- 140 merged
+    # rows. ⚠️ It is byte-identical to case34's L2.0_d0.50.dat (the determinism repeat, ledger
+    # 285 / 191c), so these are the *same* rows counted again and conform identically: 139 fits
+    # and the one onset-ramp miss that trace already carried.
+    # 7736 -> 7744 on 2026-09-09: case55's two site arms -- the acute arm's seven merged rows all
+    # on the line (its interval-5 banner row included, d/L already 1.04 there), and the chronic
+    # arm's second row. The 2 ft spacing reads from the echo in metres (`echoed_port_spacing`).
+    assert len(fits) == 7744
+    # 611 -> 612 on 2026-09-09: case55's chronic banner row (the onset ramp, one row).
+    assert len(misses) == 612
 
     # Every miss is the onset transient rather than a competing law, and the claim is that each
     # one sits **on the climb** -- at or above the round 2.0 the previous row was already at, and
@@ -360,7 +374,10 @@ def test_the_banner_row_still_prints_the_unmerged_ratio() -> None:
         checked += 1
         assert rows[0]["ratio"] == pytest.approx(PEAK_TO_MEAN_ROUND, abs=5e-4), path.name
     # 47 -> 50 on 2026-08-25 with case46's three graduated traces, all of which conform.
-    assert checked == 50, "the interval-1 traces whose banner row is itself measured"
+    # 50 -> 51 on 2026-09-02: case54's subcritical_sinks_legacy.dat, an interval-1 trace whose
+    # banner row is measured -- byte-identical to case34's L2.0_d0.50.dat, so it prints the same
+    # round 2.0000 on that row (the merge fires on the crossing with zero lag, ledger 285).
+    assert checked == 51, "the interval-1 traces whose banner row is itself measured"
 
 
 @pytest.mark.slow
@@ -389,4 +406,9 @@ def test_the_ramp_is_a_prefix_that_climbs_to_meet_the_law() -> None:
         if len(ramp) > 1:
             assert ramp[0][1] > 0.0 and ramp[0][0]["diameter"] < ramp[0][0]["spacing"], path.name
     # 49 -> 52 on 2026-08-25 with case46's three graduated traces, all of which ramp.
-    assert ramped == 52, "every merged multiport trace ramps, most by only a row or two"
+    # 52 -> 53 on 2026-09-02: case54's subcritical_sinks_legacy.dat ramps by its one onset row --
+    # the byte-identical repeat of case34's L2.0_d0.50.dat (ledger 285), so it ramps identically.
+    # 53 -> 54 on 2026-09-09: case55's chronic arm ramps by its banner row alone (printed 2.0000
+    # where the law reads 1.998 at d/L 1.004); its acute arm has no ramp at all, the banner row
+    # already on the line.
+    assert ramped == 54, "every merged multiport trace ramps, most by only a row or two"

@@ -20,9 +20,9 @@ from plumes2.units import MGD_TO_CUBIC_METRES_PER_SECOND
 from tests.conftest import ALL_PRJ_PATHS, REFERENCE_CASES, UPSTREAM
 
 EXAMPLE_PRJ = UPSTREAM / "Example_project" / "Example_project.prj"
-CASE01_PRJ = REFERENCE_CASES / "case01_macoma_cms" / "Macoma2.prj"
-CASE03_PRJ = REFERENCE_CASES / "case03_macoma_carbonate" / "test.prj"
-LEGACY_PRJ = REFERENCE_CASES / "case00_macoma_legacy_fps" / "Macoma.prj"
+CASE01_PRJ = REFERENCE_CASES / "case01_cms" / "project.prj"
+CASE03_PRJ = REFERENCE_CASES / "case03_carbonate" / "test.prj"
+LEGACY_PRJ = REFERENCE_CASES / "case00_legacy_fps" / "project.prj"
 
 
 def _load(path: Path) -> object:
@@ -91,7 +91,7 @@ class TestUnitsAreResolved:
         assert case01.effluent.flow / case03.effluent.flow == pytest.approx(22.8, abs=0.1)
 
     def test_legacy_project_converts_feet_to_metres(self) -> None:
-        """Macoma.prj stores spacing and both MZ distances in feet."""
+        """project.prj stores spacing and both MZ distances in feet."""
         case = _load(LEGACY_PRJ).to_case()  # type: ignore[attr-defined]
         assert case.diffuser.port_spacing == pytest.approx(2.0 * 0.3048)
         assert case.mixing_zone.acute_distance == pytest.approx(20.7 * 0.3048)
@@ -121,15 +121,15 @@ class TestDriftDetection:
             load_project(EXAMPLE_PRJ)
 
     def test_duplicate_layout_resolves_towards_the_prj(self) -> None:
-        """case01 has both macoma2effluent.csv and 'varios flows.csv'."""
+        """case01 has both effluent.csv and 'varios flows.csv'."""
         project = _load(CASE01_PRJ)
         chosen = project.tables[TableKind.EFFLUENT]  # type: ignore[attr-defined]
         assert chosen.source_path is not None
-        assert chosen.source_path.name == "macoma2effluent.csv"
+        assert chosen.source_path.name == "effluent.csv"
 
 
 class TestDerivedGeometryFromRealProjects:
-    def test_macoma_bottom_is_17_m_and_warns(self) -> None:
+    def test_archive_bottom_is_17_m_and_warns(self) -> None:
         """2 m port on a 15 m riser, against a 15 m ambient profile."""
         with pytest.warns(GeometryWarning, match="ambient profile"):
             case = load_project(CASE03_PRJ, warn_on_drift=False).to_case()

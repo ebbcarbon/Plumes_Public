@@ -20,9 +20,9 @@ from plumes2.plotframe import (
 from plumes2.results import CHEMISTRY_COLUMNS
 from tests.conftest import ALL_DAT_PATHS, EXAMPLE_PROJECT, REFERENCE_CASES
 
-CARBONATE = REFERENCE_CASES / "case03_macoma_carbonate"
+CARBONATE = REFERENCE_CASES / "case03_carbonate"
 #: The Dec-2025 build's `.dat` is the one the reader cannot parse; see tests/io/test_dat.py.
-CASE00 = REFERENCE_CASES / "case00_macoma_legacy_fps" / "Macoma_TxtOutputs.dat"
+CASE00 = REFERENCE_CASES / "case00_legacy_fps" / "ModelResults_legacy1.dat"
 PARSEABLE = [path for path in ALL_DAT_PATHS if path != CASE00]
 
 
@@ -201,7 +201,7 @@ def test_a_case_unlocks_the_secondaries_the_exe_never_printed(carbonate_case) ->
 @pytest.mark.parametrize(
     ("folder", "project", "trace"),
     [
-        ("case03_macoma_carbonate", "test.prj", "test2_TxtOutputs.dat"),
+        ("case03_carbonate", "test.prj", "test2_TxtOutputs.dat"),
         ("case13_generated_example", "PythonGenerated.prj", "PythonGenerated2.dat"),
     ],
 )
@@ -228,10 +228,9 @@ def test_the_reconstructed_salinity_adds_no_detectable_chemistry_error(
     # falls below the printed column. So this is a bounded offset, not a constant bias, and a
     # figure overlaying the two should not describe it as one.
 
-    relative = (
-        (frame["omega_aragonite"] - frame["omega_aragonite_exe"]).abs()
-        / frame["omega_aragonite_exe"]
-    )
+    relative = (frame["omega_aragonite"] - frame["omega_aragonite_exe"]).abs() / frame[
+        "omega_aragonite_exe"
+    ]
     assert relative.mean() < 0.05, f"OmegaA MARE {relative.mean():.3f}"
 
 

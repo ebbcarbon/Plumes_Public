@@ -19,7 +19,7 @@ Everything below is measured against runs of the real executable, archived in `r
 with their inputs recorded. Every figure is re-checked on demand — `plumes2 validate` runs the
 whole ledger and prints ours, the reference, and the error.
 
-⚠️ **Coverage is published, not implied.** 191 of the 191 countable findings in
+⚠️ **Coverage is published, not implied.** 195 of the 195 countable findings in
 [`LEDGER.md`](notes/LEDGER.md) are executable; the rest are marked with a named reason for why no
 measurement of ours can add to them. A validation report that shows only what passes is worse
 than none.
@@ -220,7 +220,7 @@ added — especially when the feedstock is Mg(OH)₂ — the near-field pH spike
 supersaturated with respect to brucite, and runaway brucite precipitation removes the very
 alkalinity the discharge was meant to deliver. `Ω_aragonite` cannot see that happening.
 
-On the dosed Macoma case: **Ω_brucite = 131.4 at the port, 0.010 by 100× dilution** (on Xiong
+On the dosed archived-diffuser case: **Ω_brucite = 131.4 at the port, 0.010 by 100× dilution** (on Xiong
 (2008)'s `log Ksp` = −10.95, adopted 2026-08-24; the superseded −11.16 read 213). Aragonite moves by
 a factor of 5 across the same trajectory; brucite moves by four orders of magnitude.
 

@@ -15,7 +15,7 @@ Several quirks matter and are all exercised by the reference cases:
   case02), with chemistry columns appended automatically when that module is on.
   So the header is parsed rather than assumed.
 * **Header text varies between exe builds.** The Dec-2025 build in
-  `reference_cases/case00_macoma_legacy_fps` writes ``Avg-Dil`` where 2026 builds
+  `reference_cases/case00_legacy_fps` writes ``Avg-Dil`` where 2026 builds
   write ``Dilutn``, uses bare unit rows instead of parenthesised ones, and emits a
   ``P-Temp`` column. Nothing keys on exact header strings.
 * **The terminating step row is truncated.** It is printed off-interval and with
@@ -55,7 +55,7 @@ _BANNER_RE = re.compile(r"^[-.]{4,}\s*(?P<text>.*?)\s*[-.]{4,}$")
 _TABLE_HEADING_RE = re.compile(r"^(?P<name>[A-Za-z][A-Za-z /]*):\s*$")
 _STEP_ROW_RE = re.compile(r"^\s*\d+\s")
 #: A run can go numerically bad and emit literal `NaN` in place of every value --
-#: `reference_cases/case09_macoma_single_port` does, including its wastefield width
+#: `reference_cases/case09_single_port` does, including its wastefield width
 #: and its entire far-field table. Those rows are data (they record the failure), so
 #: they are parsed rather than skipped.
 _FLOAT_ROW_RE = re.compile(r"^\s*(?:-?\d+\.\d+|NaN)\s", re.IGNORECASE)
@@ -63,9 +63,7 @@ _WASTEFIELD_RE = re.compile(r"wastefield width of\s*:\s*(?P<width>-?[\d.]+|NaN)"
 #: The far-field preamble names the law in one of three forms (case50): `4/3 Power Law based
 #: Eddy Diffusivity is used:`, `Constant Eddy Diffusivity is used:`, `Linearly Varying Eddy
 #: Diffusivity is used:`. Only the 4/3 form carries the word `based`; the law is the text before it.
-_EDDY_RE = re.compile(
-    r"^\s*(?P<law>.+?)\s+(?:based\s+)?Eddy Diffusivity is used", re.IGNORECASE
-)
+_EDDY_RE = re.compile(r"^\s*(?P<law>.+?)\s+(?:based\s+)?Eddy Diffusivity is used", re.IGNORECASE)
 
 #: Free-text notes the exe emits outside the banner form.
 _NOTE_PREFIX = "Note:"
@@ -134,6 +132,25 @@ class DatFile:
     @property
     def has_farfield(self) -> bool:
         return self.farfield is not None
+
+    @property
+    def echoed_port_spacing(self) -> float | None:
+        """The diffuser echo's `Spacing`, in **metres**, or `None` without a diffuser echo.
+
+        The echo prints the spacing in the unit it was *entered* in and flags the column: case55's
+        feet-entered 2 ft echoes as `2.0` under `(ft)`, and the exe ran it as 0.6096 m (its banner
+        width and its merge step both say so). Every reader of the echo that wants a length in
+        metres should come through here rather than take the column raw.
+        """
+        table = self.echoed_tables.get("Diffuser")
+        if table is None or "Spacing" not in table.columns or table.empty:
+            return None
+        value = float(table["Spacing"].iloc[0])
+        units = self.units.get("Diffuser", [])
+        column = list(table.columns).index("Spacing")
+        if column < len(units) and "ft" in units[column]:
+            value *= 0.3048
+        return value
 
     def event_steps(self) -> dict[str, list[int]]:
         """Map each banner text to the step numbers it was printed before."""

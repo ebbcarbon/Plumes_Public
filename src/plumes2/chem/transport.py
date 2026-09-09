@@ -94,9 +94,7 @@ def effluent_endmember(
             salinity,
             temperature,
             ph_scale=chemistry.ph_scale,
-            constants=constants or resolve_constants(
-                settings.k1k2_option, settings.kso4_option
-            ),
+            constants=constants or resolve_constants(settings.k1k2_option, settings.kso4_option),
             # ⚠️ The effluent is the sample most likely to be outside the window, and the one
             # the user chose: case07's is 45 psu against Lueker's 43. Labelled separately from
             # the plume so the message says which end of the mixing line is the extrapolation.
@@ -132,9 +130,7 @@ def mix(effluent: ArrayLike, ambient: ArrayLike, dilution: ArrayLike) -> NDArray
         raise ValueError("dilution must be at least 1 (1 means undiluted effluent)")
     effluent_arr = np.asarray(effluent, dtype=np.float64)
     ambient_arr = np.asarray(ambient, dtype=np.float64)
-    return np.asarray(
-        (effluent_arr + (dilution_arr - 1.0) * ambient_arr) / dilution_arr
-    )
+    return np.asarray((effluent_arr + (dilution_arr - 1.0) * ambient_arr) / dilution_arr)
 
 
 def plume_carbonate(

@@ -13,16 +13,22 @@ from __future__ import annotations
 
 import re
 from html import escape
+from pathlib import Path
 
 import pytest
 
-from plumes2.report.validation import render_validation, summary_lines
+from plumes2.report.validation import (
+    build_validation_report,
+    render_validation,
+    summary_lines,
+)
 from plumes2.validation import (
     LEDGER_ROWS_WITH_NUMBERS,
     ROWS_DISAGREEING_WITH_THEMSELVES,
     TARGETS,
     Agreement,
     Evidence,
+    Outcome,
     Target,
     coverage_by_phase,
     ledger_row_of,
@@ -286,12 +292,12 @@ def test_the_cli_summary_is_plain_ascii(ledger_outcomes) -> None:  # type: ignor
 # ------------------------------------------------------------------ the denominator itself
 
 
-#: Rows in `LEDGER.md` carrying a numeric phase cell, as of 2026-09-01 (rows 281, 281b, 281c
-#: and 282 added -- case51, the flag-decode suite). Three rows
+#: Rows in `LEDGER.md` carrying a numeric phase cell, as of 2026-09-09 (row 286 added -- case55,
+#: the site case; before it rows 284, 284b and 285 for case53 and case54). Three rows
 #: are filed under "—" and are not counted here. Not the same as
 #: `LEDGER_ROWS_WITH_NUMBERS`, which counts only the rows carrying a *number* and is the honest
 #: denominator for coverage -- this one is mechanical, and exists purely to notice growth.
-LEDGER_TABLE_ROWS = 316
+LEDGER_TABLE_ROWS = 320
 
 
 def _ledger_rows() -> dict[str, list[int]]:
@@ -535,8 +541,8 @@ def test_every_bucket_heading_counts_its_own_rows() -> None:
             row = line.split("|")[1].strip()
             if row and row != "#" and set(row) - set("-"):
                 seen += 1
-    assert not wrong, "bucket headings disagree with their contents:" + chr(10) + chr(10).join(
-        wrong
+    assert not wrong, (
+        "bucket headings disagree with their contents:" + chr(10) + chr(10).join(wrong)
     )
 
 
@@ -697,3 +703,12 @@ def test_the_ledger_denominator_has_not_gone_stale() -> None:
     )
     # And the hand count can never exceed the mechanical one, whatever else drifts.
     assert sum(len(rows) for rows in LEDGER_ROWS_WITH_NUMBERS.values()) <= total
+
+
+def test_the_validation_report_is_a_pdf_when_the_path_says_so(tmp_path: Path) -> None:
+    """The same table document, on letter pages: the ledger is what goes in the permit file."""
+    outcomes = [Outcome(target=t, ours=t.reference) for t in TARGETS]
+    target = build_validation_report(tmp_path / "validation.pdf", outcomes)
+    data = target.read_bytes()
+    assert data.startswith(b"%PDF-1.")
+    assert len(re.findall(rb"/Type\s*/Page[^s]", data)) >= 2, "a table that long flows over pages"
