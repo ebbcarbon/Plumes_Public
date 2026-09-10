@@ -168,6 +168,13 @@ def brucite_extract(results: Results) -> dict[str, Any]:
     out["nearfield_end_time_s"] = float(time_s[-1])
     out["nearfield_end_ph_total"] = float(near["ph_total"].iloc[-1])
     out["nearfield_end_omega_brucite"] = float(omega[-1])
+    if "omega_brucite_phreeqc" in near.columns:
+        # The second engine's column, when the case asked for it: the same three readings, so a
+        # study can lay the bound and the Pitzer value side by side cell for cell.
+        pitzer = near["omega_brucite_phreeqc"].to_numpy(np.float64)
+        out["port_omega_brucite_phreeqc"] = float(pitzer[0])
+        out["nearfield_peak_omega_brucite_phreeqc"] = float(np.nanmax(pitzer))
+        out["nearfield_end_omega_brucite_phreeqc"] = float(pitzer[-1])
 
     crossing = _log_crossing(omega, dilution, time_s, distance)
     region = "nearfield"

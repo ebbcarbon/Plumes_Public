@@ -56,7 +56,7 @@ from plumes2.config import AmbientChemistryLevel, Case, EddyDiffusivityLaw
 from plumes2.io.csv_tables import TableKind, table_from_values, write_csv_table
 from plumes2.io.dat import DatFile
 from plumes2.io.prj import write_prj
-from plumes2.io.project import prj_from_case
+from plumes2.io.project import prj_from_case, written_units
 from plumes2.provenance import provenance
 
 __all__ = [
@@ -262,7 +262,17 @@ def _note(experiment: Experiment) -> str:
         "to be re-entered in the GUI, and the ambient chemistry table must reach **deeper than",
         f"the {diffuser.port_depth:g} m port** or the exe refuses to run.",
         "",
+        "## Units the `.prj` is stored in",
+        "",
+        "The exe reads these as written (ledger row 290), but the GUI shows the *stored* number in",
+        "the *stored* unit -- check the dropdown says the same before reading a value as metric:",
+        "",
     ]
+    stored = written_units(prj_from_case(experiment.case))
+    lines += [f"- {entry}" for entry in stored] or [
+        "- every table in its primary unit (m, MGD, degC)"
+    ]
+    lines.append("")
     return "\n".join(lines)
 
 

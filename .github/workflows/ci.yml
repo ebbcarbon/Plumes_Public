@@ -46,7 +46,7 @@ jobs:
       - name: Install
         run: |
           uv venv --python ${{ matrix.python }}
-          uv pip install -e ".[dev]"
+          uv pip install -e ".[dev,pitzer]"
 
       # The tools are called from the environment the Install step built. `uv run` would
       # instead discover the project, rebuild .venv with its own interpreter and without the

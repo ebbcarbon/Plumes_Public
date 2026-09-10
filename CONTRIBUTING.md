@@ -7,7 +7,7 @@ detail in [`notes/ENVIRONMENT.md`](notes/ENVIRONMENT.md).
 ## Running the tests
 
 ```powershell
-.venv\Scripts\python.exe -m pytest -n auto --dist loadfile   # everything, ~2-4 min
+.venv\Scripts\python.exe -m pytest -n auto --dist loadfile   # everything, ~4 min cold, less with a warm outcome cache
 .venv\Scripts\python.exe -m pytest -m "not slow"             # the fast lane
 .venv\Scripts\plumes2 validate                               # the ledger, re-derived
 ```
@@ -19,6 +19,9 @@ detail in [`notes/ENVIRONMENT.md`](notes/ENVIRONMENT.md).
   of `src/plumes2` plus the reference data — any change to either discards it whole, so the
   first run after a model change is the slow one.
 - Lint and types: `ruff check src tests` and `mypy` (config in `pyproject.toml`).
+- The PHREEQC engine is an extra (`pip install -e ".[dev,pitzer]"`, as CI does); without it
+  `tests/test_pitzer.py` skips as a module and ledger rows 287–289 report an error in
+  `plumes2 validate` rather than a pass.
 
 ## What is never edited
 

@@ -123,6 +123,10 @@ def _kpis(
         tiles.append(("pH at the end", f"{float(last['ph_total']):.2f}", ""))
     if "omega_brucite" in frame.columns:
         tiles.append(("Peak brucite", f"{float(frame['omega_brucite'].max()):,.3g}", ""))
+    if "omega_brucite_phreeqc" in frame.columns:
+        tiles.append(
+            ("Peak brucite (PHREEQC)", f"{float(frame['omega_brucite_phreeqc'].max()):,.3g}", "")
+        )
     if farfield is not None and len(farfield):
         tiles.append(
             (

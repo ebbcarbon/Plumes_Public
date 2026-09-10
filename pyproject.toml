@@ -39,6 +39,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# The second brucite engine: PHREEQC through phreeqpython (Apache-2.0; the wheel bundles the
+# IPhreeqc library and pitzer.dat for Windows, Linux and macOS, so no compiler and nothing on
+# PATH). Opt-in per case (`CarbonateSettings.pitzer`); see notes/PHREEQC_PLAN.md.
+pitzer = ["phreeqpython>=1.6.2"]
 dev = [
     "pytest>=8.3",
     "pytest-cov>=6.0",
@@ -104,9 +108,10 @@ select = ["E", "F", "W", "I", "UP", "B", "NPY", "RUF"]
 known-first-party = ["plumes2", "tests"]
 
 [[tool.mypy.overrides]]
-# Neither ships type information. Only scipy.special.erf is used; PyCO2SYS is reached
-# solely through plumes2.chem.speciation, which types its own boundary.
-module = ["scipy.*", "PyCO2SYS.*"]
+# None ships type information. Only scipy.special.erf is used; PyCO2SYS is reached solely
+# through plumes2.chem.speciation, and phreeqpython solely through plumes2.chem.pitzer.engine,
+# each of which types its own boundary.
+module = ["scipy.*", "PyCO2SYS.*", "phreeqpython.*"]
 ignore_missing_imports = true
 
 [tool.mypy]

@@ -7366,6 +7366,152 @@ def _dosed_run():  # type: ignore[no-untyped-def]
     )
 
 
+# ------------------------------------------------------------ the Pitzer engine (rows 287-289)
+
+_PITZER_SITE = {"salinity": 30.9, "temperature": 11.2, "dic": 2092.0}
+_PITZER_DOSE_AXIS = (2146.0, 4000.0, 6000.0, 20000.0)
+
+
+def _pitzer_pkw_25c() -> float:
+    """Pure water through PHREEQC / pitzer.dat: `2 pH_free` is pKw (rows 287)."""
+    from plumes2.chem.pitzer import solve_pitzer
+
+    return float(2.0 * solve_pitzer(0.0, 0.0, 0.0, 25.0).ph_free)
+
+
+def _pitzer_ph_gap() -> float:
+    """Worst |PHREEQC - PyCO2SYS| total-scale pH along the site's dose axis (row 288)."""
+    import numpy as np
+
+    from plumes2.chem import solve_from_alkalinity_dic
+    from plumes2.chem.pitzer import solve_pitzer
+
+    ta = np.asarray(_PITZER_DOSE_AXIS)
+    s, t, dic = _PITZER_SITE["salinity"], _PITZER_SITE["temperature"], _PITZER_SITE["dic"]
+    ours = solve_from_alkalinity_dic(ta, dic, s, t)
+    theirs = solve_pitzer(ta, dic, s, t, borate_option=1)
+    return float(np.max(np.abs(theirs.ph_total - ours.ph_total)))
+
+
+def _pitzer_davies_ratio() -> float:
+    """`Omega_brucite` (Davies, totals) over the Pitzer value at TA 20 000 (row 289)."""
+    from plumes2.chem import solubility_brucite, solve_from_alkalinity_dic
+    from plumes2.chem.pitzer import solve_pitzer
+
+    s, t, dic = _PITZER_SITE["salinity"], _PITZER_SITE["temperature"], _PITZER_SITE["dic"]
+    davies = solve_from_alkalinity_dic(20000.0, dic, s, t)
+    bound = float(davies.omega_brucite(solubility_brucite(s, t)))
+    return bound / float(solve_pitzer(20000.0, dic, s, t, borate_option=1).omega_brucite)
+
+
+def _header_styles_parsed() -> float:
+    """Row 48: the two `.dat` header styles the archive holds map onto one canonical column set.
+
+    The Dec-2025 build prints `Avg-Dil`, bare units and `P-Temp`; the 2026 builds print `Dilutn`.
+    Both must reach the same neutral names, or a legacy trace would plot and compare differently
+    from a current one for no physical reason. Counted: header styles whose near-field columns
+    resolve to the full core set. 2 of 2 is the claim.
+    """
+    from plumes2.plotframe import _EXE_COLUMNS
+
+    # The columns every near-field trace prints whatever the build or the output selection:
+    # dilution and the geometry. (`P-Temp`/`P-Sal` and the chemistry columns are session state.)
+    core = {"dilution", "plume_diameter_m", "x_m", "y_m"}
+    parsed = 0
+    for trace in (
+        "reference_cases/case00_legacy_fps/ModelResults_legacy1.dat",  # Avg-Dil
+        "reference_cases/case13_generated_example/PythonGenerated2.dat",  # Dilutn
+    ):
+        names = {_EXE_COLUMNS[c] for c in _dat(trace).nearfield.columns if c in _EXE_COLUMNS}
+        parsed += int(core <= names)
+    return float(parsed)
+
+
+def _generated_project_nearfield_mismatches() -> float:
+    """Row 95: the exe's run of a `.prj` the port wrote, against the shipped upstream trace.
+
+    case13's `PythonGenerated.prj` was written from the upstream example with no template; the exe
+    loaded it and ran it. Its near field is compared cell by cell with the upstream example's own
+    trace over the columns the two share -- the Phase 1 acceptance criterion. Zero is the claim;
+    any other number says how many near-field cells the reader -> model -> writer chain lost.
+    """
+    from plumes2.io.dat import read_dat
+
+    ours = _dat("reference_cases/case13_generated_example/PythonGenerated2.dat").nearfield
+    shipped = read_dat(_EXAMPLE / "ModelResults_TxtOutputs.dat").nearfield
+    if len(ours) != len(shipped):
+        return float(abs(len(ours) - len(shipped)) * len(shipped.columns))
+    shared = [
+        c for c in ours.columns if c in shipped.columns and np.issubdtype(ours[c].dtype, np.number)
+    ]
+    return float(sum(int((ours[c].to_numpy() != shipped[c].to_numpy()).sum()) for c in shared))
+
+
+def _display_inverse_closure() -> float:
+    """Row 208: each switchable display unit is the exact inverse of `units.py`'s input unit.
+
+    `display.py` converts SI *out* (`si * from_si + offset`); `units.py` converts a stored `.prj`
+    value *in* (`value * to_si + offset`). Both sides are built from the same constants, and this
+    is the check that they stayed that way: five probe values per dimension out through the US
+    display unit and back in through the selector that means the same unit, worst relative
+    closure. m/ft, m/s / ft/s, degC/degF and m3/s / MGD (MGD is the exe's *primary* flow unit).
+    """
+    from plumes2.display import US
+    from plumes2.io.csv_tables import TableKind
+    from plumes2.units import convert_to_si
+
+    probes = (-2.0, 0.0, 0.6096, 12.345, 1.0e4)
+    checks = (
+        (US.length, TableKind.DIFFUSER, "port_spacing", 2),
+        (US.speed, TableKind.AMBIENT, "current_speed", 2),
+        (US.temperature, TableKind.AMBIENT, "temperature", 2),
+        (US.flow, TableKind.EFFLUENT, "flow", 1),
+    )
+    worst = 0.0
+    for unit, kind, column, flag in checks:
+        for value in probes:
+            displayed = value * unit.from_si + unit.offset
+            back = convert_to_si(kind, column, flag, displayed)
+            worst = max(worst, abs(back - value) / max(1.0, abs(value)))
+    return worst
+
+
+def _written_selectors_read_as_written() -> float:
+    """Row 290: case55 -- the exe read the selectors the port wrote as the port meant them.
+
+    The port wrote the site's spacing and both mixing-zone distances in **feet** (selector 2,
+    because 2.00 ft is exact in three significant figures where 0.610 m is not). Per arm, seven
+    checks: the as-run `.prj` still carries the three feet selectors; the exe's `.dat` labels
+    those three echoed columns `(ft)`; and its wastefield banner is `(n - 1) x 0.6096 m + D_end`
+    to the printed 0.01 m -- the one number in the trace that can only be right if the exe took
+    2.00 as feet. Counted: mismatches over 14 checks.
+    """
+    from plumes2.io.csv_tables import TableKind
+    from plumes2.io.prj import read_prj
+    from plumes2.units import unit_for
+
+    feet_to_metres = unit_for(TableKind.DIFFUSER, "port_spacing", 2).to_si
+    mismatches = 0
+    for arm in ("acute", "chronic"):
+        prj = read_prj(_CASES / "case55_macoma_site" / f"asrun_macoma_{arm}.prj")
+        dat = _dat(f"reference_cases/case55_macoma_site/macoma_{arm}.dat")
+        selectors = (
+            prj.diffuser.unit_flags[5],  # port spacing; the diffuser block has no leading selector
+            prj.mixing_zone.unit_flags[1],  # acute distance, after the block's leading selector
+            prj.mixing_zone.unit_flags[2],  # chronic distance
+        )
+        mismatches += sum(selector != 2 for selector in selectors)
+        labels = dict(zip(dat.columns["Diffuser"], dat.units["Diffuser"], strict=True))
+        mismatches += sum(labels[column] != "(ft)" for column in ("Spacing", "AcuteMZ", "ChrncMZ"))
+        n_ports, spacing_ft = prj.diffuser.rows[0][4], prj.diffuser.rows[0][5]
+        expected = (n_ports - 1) * spacing_ft * feet_to_metres + float(
+            dat.nearfield["P-dia"].iloc[-1]
+        )
+        assert dat.wastefield_width is not None
+        mismatches += int(abs(dat.wastefield_width - expected) > 0.005)
+    return float(mismatches)
+
+
 TARGETS: tuple[Target, ...] = (
     # ------------------------------------------------------------------ Phase 1, legacy I/O
     Target(
@@ -7410,6 +7556,78 @@ TARGETS: tuple[Target, ...] = (
         "round-off because the conversion is exact by definition. ⚠️ It checks three **named** "
         "quantities rather than every length, because `port_depth` carries its own flag and stays "
         "2 m -- a blanket rescale would silently be wrong there and this would not catch it.",
+    ),
+    Target(
+        row="48",
+        phase=1,
+        evidence=Evidence.GOLDEN,
+        claim="The `.dat` reader parses both header styles onto one canonical column set",
+        source="case00's Dec-2025 trace (`Avg-Dil`, bare units, `P-Temp`) and case13's 2026 "
+        "trace (`Dilutn`)",
+        measure=_header_styles_parsed,
+        reference=2.0,
+        tolerance=0.0,
+        unit="header styles parsed",
+        note="Two builds, two spellings of the same column, one set of neutral names -- so a "
+        "legacy trace and a current one plot and compare identically. Byte-exact round trip "
+        "(row 18) already depends on this; the row was given its own number on 2026-09-10 so the "
+        "legacy-build claim is re-derived under its own name rather than implied.",
+    ),
+    Target(
+        row="95",
+        phase=1,
+        evidence=Evidence.GOLDEN,
+        claim="The exe's run of a project the port generated reproduces the shipped near field "
+        "bit for bit",
+        source="case13 `PythonGenerated2.dat` against `upstream/Example_project/"
+        "ModelResults_TxtOutputs.dat`, 55 rows x 5 shared columns",
+        measure=_generated_project_nearfield_mismatches,
+        reference=0.0,
+        tolerance=0.0,
+        unit="differing near-field cells",
+        note="Phase 1's acceptance criterion: reader -> semantic model -> writer, then the exe "
+        "itself, and every near-field cell the two traces share agrees (`Depth`, `Dilutn`, "
+        "`P-dia`, `x-posn`, `y-posn`), with `Plume traps`, `merging happened` and `Plume surfaces` "
+        "on the same steps (255 / 260 / 275). The far field is *not* compared: it differs by the "
+        "old-build wastefield width row 6 records. Zero tolerance because one differing cell is "
+        "one input the chain did not carry.",
+    ),
+    Target(
+        row="290",
+        phase=1,
+        evidence=Evidence.GOLDEN,
+        claim="The exe reads the unit selectors the port writes as the port meant them",
+        source="case55, both arms: the as-run `.prj` (byte-identical to ours) and the exe's `.dat`",
+        measure=_written_selectors_read_as_written,
+        reference=0.0,
+        tolerance=0.0,
+        unit="mismatches over 14 checks",
+        note="The end-to-end unit contract in one number. The port wrote spacing and both "
+        "mixing-zone distances in feet (selector 2 -- 2.00 ft is exact where 0.610 m is not); "
+        "the exe kept the selectors, labelled the echoed columns `(ft)`, and its wastefield "
+        "banner (15.53 / 15.28 m) is (n - 1) x 0.6096 m + the end diameter to the printed 0.01 m. "
+        "Zero tolerance: one mismatch means the exe read a number in a different unit than the "
+        "port wrote it, which is the failure the Dec-2025 feet slip (row 49) was. Added 2026-09-10 "
+        "while closing row 208; `written_units` prints what a `.prj` is stored in so the GUI "
+        "cannot surprise the operator the same way.",
+    ),
+    Target(
+        row="208",
+        phase=6,
+        evidence=Evidence.INTERNAL,
+        claim="Every switchable display unit is the exact inverse of the input-side unit",
+        source="none -- `display.US` against `units.py`'s selectors, five probe values per "
+        "dimension",
+        measure=_display_inverse_closure,
+        reference=0.0,
+        tolerance=1e-12,
+        unit="max |SI -> US -> SI - SI| / max(1, |SI|)",
+        note="No reference implementation: our output side against our input side (`internal`), "
+        "so a number the report prints in US units is the number the `.prj` reader would take "
+        "back in, for length, speed, "
+        "temperature (affine) and flow (MGD, the exe's own primary flow unit). Both directions "
+        "are built from one set of constants, and this is what keeps them that way. Given its "
+        "number 2026-09-10 (operator) after sitting Open without one since 2026-08-19.",
     ),
     Target(
         row="74",
@@ -10561,6 +10779,67 @@ TARGETS: tuple[Target, ...] = (
         "15 C is the correct residual rather than a tolerance.",
     ),
     Target(
+        row="287",
+        phase=8,
+        evidence=Evidence.EXTERNAL,
+        claim="PHREEQC / pitzer.dat reproduces the ion product of pure water at 25 C",
+        source="Harned & Owen: pKw 13.995 at 25 C (14.535 at 10 C, where the engine reads 14.531)",
+        measure=_pitzer_pkw_25c,
+        reference=13.995,
+        tolerance=0.01,
+        unit="pKw",
+        note="The model-independent check on the second brucite engine (`chem/pitzer`): before "
+        "any seawater is involved, its `Kw(T)` has to be the textbook one, because `[OH-]` "
+        "enters the brucite product squared. The tolerance is the literature's own last digit. "
+        "Needs the `plumes2[pitzer]` extra; without it this row reports an error, not a pass.",
+    ),
+    Target(
+        row="288",
+        phase=8,
+        evidence=Evidence.EXTERNAL,
+        claim="PHREEQC and PyCO2SYS agree on the total-scale pH of the dosed site water to 0.03",
+        source="the same (TA, DIC, S 30.9, T 11.2) row -- TA 2146, 4000, 6000, 20 000 at DIC "
+        "2092 -- solved by both engines, Uppstrom boron in both",
+        measure=_pitzer_ph_gap,
+        reference=0.0,
+        tolerance=0.03,
+        unit="max |pH_total(PHREEQC) - pH_total(PyCO2SYS)|",
+        note="\u2b50 What licenses reading the two brucite columns against each other: the "
+        "engines disagree on brucite by 7-8x (row 289) but on the carbonate side by <= 0.03 pH "
+        "from pH 7.7 to 12, so the brucite gap is the activity treatment, not the pH. "
+        "\u26a0 Measured with boron *entered*; left out, PHREEQC reads 0.13-0.31 high at pH 7.7-10 "
+        "(the borate alkalinity becomes carbonate), which is how the spike first read it. "
+        "PHREEQC's own pH is NBS; the total scale is built from `m(H+) + m(HSO4-)` per kg of "
+        "solution. The plan (PHREEQC_PLAN.md row C) predicted PHREEQC *lower* by 0.03-0.10: a "
+        "miss.",
+    ),
+    Target(
+        row="289",
+        phase=8,
+        evidence=Evidence.INTERNAL,
+        claim="The Pitzer brucite saturation state sits 8.7x below the Davies bound at TA 20 000",
+        source="none -- the ratio of the port's two brucite engines on the same water and the same "
+        "Ksp; pinned as measured 2026-09-09, re-pinned 2026-09-10 when the Davies column moved to "
+        "the molal basis",
+        measure=_pitzer_davies_ratio,
+        reference=8.71,
+        tolerance=0.15,
+        unit="Omega_brucite / Omega_brucite_pitzer, S 30.9, T 11.2, TA 20 000, DIC 2092",
+        note="\u2b50\u2b50 **The size of the terms `omega_brucite` could only bound.** Decomposed: "
+        "`[OH-]^2` 3.1x (PyCO2SYS's hydroxide is a *total*, ~45 % of it the MgOH+ pair at pH "
+        "11-12; the brucite product wants the free ion, squared), `gamma(OH-)^2` 1.9x (Pitzer "
+        "0.54 vs Davies 0.75), `gamma(Mg2+)` 1.2x, Mg pairing 1.0-1.2x. ⚠ **Re-pinned 7.92 -> "
+        "8.71 on 2026-09-10**: until then the Davies column formed its product per kg of solution "
+        "against a molal Ksp, a factor 0.91 the decomposition had to carry; `omega_brucite` now "
+        "works on the molal scale (operator) and the four terms above are the whole ratio. "
+        "Nearly flat along the dose axis (8.3 at the ambient). The plan predicted 1.5-3x: a miss "
+        "by ~3x, and "
+        "on the hydroxide side rather than the magnesium side it named. \u26a0 The MgOH+ share is "
+        "pitzer.dat's formation constant (log_k -11.809; phreeqc.dat has -11.44), a database value "
+        "and the largest single term -- a regression pin on our own two engines, not evidence "
+        "against a measurement. Both columns are kept, permanently (operator, 2026-09-09).",
+    ),
+    Target(
         row="218",
         phase=7,
         evidence=Evidence.INTERNAL,
@@ -11130,7 +11409,7 @@ TARGETS: tuple[Target, ...] = (
         claim="Peak Omega_brucite of the dosed Macoma plume",
         source="none -- the exe cannot report brucite at all",
         measure=lambda: float(_dosed_run().nearfield["omega_brucite"].max()),
-        reference=131.4,
+        reference=146.3,
         tolerance=4.0,
         unit="Omega",
         note="⚠️ The one quantity here with **no reference implementation**, so this pins our own "
@@ -11141,7 +11420,11 @@ TARGETS: tuple[Target, ...] = (
         "replaced by Xiong (2008)'s measured -10.95 +/- 0.2 (operator decision, PLAN 8.1; the "
         "lineage ladder and citations are in chem/constants.py). Every Omega_brucite fell by "
         "exactly 10^0.21 = 1.62x; the trends, which rest on the salinity and pH dependences, "
-        "did not move.",
+        "did not move. ⚠ **Re-pinned 131.4 -> 146.3 on 2026-09-10** (operator): the product "
+        "is now formed on the molal scale -- per-kg-of-solution [Mg2+] and [OH-] each divided by "
+        "the water fraction before meeting the molal Ksp -- so every seawater Omega rose by "
+        "1/water_fraction^3, 1.11 at S 35, and the Omega = 1 threshold fell 0.02 pH. Pure water "
+        "is unchanged.",
     ),
     # ------------------------------------------------------------------ case51, flag ownership
     Target(
@@ -11397,6 +11680,7 @@ LEDGER_ROWS_WITH_NUMBERS: dict[int, frozenset[str]] = {
             "1",
             "16",
             "28",
+            "48",
             "49",
             "72",
             "74",
@@ -11404,6 +11688,7 @@ LEDGER_ROWS_WITH_NUMBERS: dict[int, frozenset[str]] = {
             "86",
             "87",
             "88",
+            "95",
             "113",
             "121",
             "141",
@@ -11415,6 +11700,7 @@ LEDGER_ROWS_WITH_NUMBERS: dict[int, frozenset[str]] = {
             "282",
             "283",
             "284b",
+            "290",
         )
     ),
     2: frozenset(
@@ -11586,6 +11872,7 @@ LEDGER_ROWS_WITH_NUMBERS: dict[int, frozenset[str]] = {
     6: frozenset(
         (
             "18",
+            "208",
             "79",
             "84",
             "198",
@@ -11619,6 +11906,9 @@ LEDGER_ROWS_WITH_NUMBERS: dict[int, frozenset[str]] = {
         (
             "196",
             "197",
+            "287",
+            "288",
+            "289",
         )
     ),
 }

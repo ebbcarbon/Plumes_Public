@@ -215,9 +215,15 @@ def _styled() -> AbstractContextManager[None]:
     return plt.rc_context(matplotlib_style())  # type: ignore[arg-type]
 
 
-def _line(axes: Axes, x: np.ndarray, y: np.ndarray, slot: int, label: str) -> None:
-    """One series, in its assigned slot colour, carrying its own legend label."""
-    axes.plot(x, y, color=SERIES[slot], linewidth=1.6, label=label)
+def _line(
+    axes: Axes, x: np.ndarray, y: np.ndarray, slot: int, label: str, *, linestyle: str = "-"
+) -> None:
+    """One series, in its assigned slot colour, carrying its own legend label.
+
+    `linestyle` is how the same quantity by a second chemistry solver is drawn -- dashed, in
+    the colour of the quantity, so a reader compares engines by dash and minerals by hue.
+    """
+    axes.plot(x, y, color=SERIES[slot], linewidth=1.6, label=label, linestyle=linestyle)
 
 
 def _legend(axes: Axes, *, outside: bool, title: str | None = None) -> None:
@@ -1561,15 +1567,24 @@ def _panel_ph(plot: PlotFrame, units: UnitSystem) -> Panel:
     length = units.length
     distance = length(_downstream(frame))
     ph = frame["ph_total"].to_numpy(dtype=float)
+    compared = "ph_total_phreeqc" in frame.columns
+    ph_phreeqc = frame["ph_total_phreeqc"].to_numpy(dtype=float) if compared else None
 
     def draw(figure: FigureBase, axes: Axes) -> None:
         del figure
-        axes.plot(distance, ph, color=SERIES[0], linewidth=1.6)
+        if ph_phreeqc is None:
+            axes.plot(distance, ph, color=SERIES[0], linewidth=1.6)
+            ends = [(distance, ph, f"{ph[-1]:.2f}", 0)]
+        else:
+            _line(axes, distance, ph, 0, "PyCO2SYS")
+            _line(axes, distance, ph_phreeqc, 0, "PHREEQC", linestyle="--")
+            _legend(axes, outside=False)
+            ends = [(distance, ph, f"{ph[-1]:.2f}", 0)]
         axes.set_xlabel(_axis_label("distance from the diffuser", length.label))
         axes.set_ylabel("pH (total scale)")
         axes.set_title("pH along the plume")
         _mark_merge(axes, frame, distance)
-        _end_labels(axes, [(distance, ph, f"{ph[-1]:.2f}", 0)])
+        _end_labels(axes, ends)
 
     drawing = Drawing(draw, height=3.0)
     merge_note = _merge_note(frame, distance)
@@ -1579,15 +1594,21 @@ def _panel_ph(plot: PlotFrame, units: UnitSystem) -> Panel:
     ]
     if merge_note:
         notes.append(merge_note)
+    if compared and ph_phreeqc is not None:
+        gap = float(np.nanmax(np.abs(ph_phreeqc - ph)))
+        notes.append(
+            f"The dashed line is PHREEQC's pH on the same scale and basis; the two engines differ "
+            f"by at most {gap:.3f} along this plume."
+        )
 
-    table = _table(
-        frame.assign(_d=_downstream(frame)),
-        {
-            "_d": f"distance ({length.label})",
-            "dilution": "dilution",
-            "ph_total": "pH (total scale)",
-        },
-    )
+    columns = {
+        "_d": f"distance ({length.label})",
+        "dilution": "dilution",
+        "ph_total": "pH (total scale)",
+    }
+    if compared:
+        columns["ph_total_phreeqc"] = "pH, PHREEQC"
+    table = _table(frame.assign(_d=_downstream(frame)), columns)
     return Panel(
         key="ph",
         title="pH",
@@ -1608,19 +1629,24 @@ def _panel_saturation(plot: PlotFrame, units: UnitSystem) -> Panel:
     frame = plot.frame
     length = units.length
     distance = length(_downstream(frame))
+    # (column, legend name, colour slot, line style): a mineral keeps its colour across solvers,
+    # and PHREEQC's value of it is dashed -- so six lines read as three minerals by two engines.
     wanted = [
-        ("omega_aragonite", "aragonite"),
-        ("omega_calcite", "calcite"),
-        ("omega_brucite", "brucite"),
+        ("omega_aragonite", "aragonite", 0, "-"),
+        ("omega_aragonite_phreeqc", "aragonite (PHREEQC)", 0, "--"),
+        ("omega_calcite", "calcite", 1, "-"),
+        ("omega_calcite_phreeqc", "calcite (PHREEQC)", 1, "--"),
+        ("omega_brucite", "brucite", 2, "-"),
+        ("omega_brucite_phreeqc", "brucite (PHREEQC)", 2, "--"),
     ]
-    present = [(column, name) for column, name in wanted if column in frame.columns]
+    present = [entry for entry in wanted if entry[0] in frame.columns]
 
     def draw(figure: FigureBase, axes: Axes) -> None:
         del figure
         ends = []
-        for slot, (column, name) in enumerate(present):
+        for column, name, slot, style in present:
             values = frame[column].to_numpy(dtype=float)
-            _line(axes, distance, values, slot, name)
+            _line(axes, distance, values, slot, name, linestyle=style)
             ends.append((distance, values, _short(float(values[-1])), slot))
         # Log because brucite and the carbonates sit decades apart. One axis, not two.
         axes.set_yscale("log")
@@ -1643,7 +1669,7 @@ def _panel_saturation(plot: PlotFrame, units: UnitSystem) -> Panel:
     drawing = Drawing(draw)
     table = _table(
         frame.assign(_d=_downstream(frame)),
-        {"_d": f"distance ({length.label})", **dict(present)},
+        {"_d": f"distance ({length.label})", **{c: n for c, n, _s, _l in present}},
     )
     return Panel(
         key="saturation",
@@ -1655,6 +1681,17 @@ def _panel_saturation(plot: PlotFrame, units: UnitSystem) -> Panel:
             "carbonate minerals sit decades apart, which is itself the reading that matters: a "
             "brucite excursion is short-lived, while the carbonates stay supersaturated "
             "throughout."
+            + (
+                " Dashed lines are the same minerals by the second chemistry solver, PHREEQC with "
+                "its Pitzer ion-interaction database, on the same water and (for brucite) the same "
+                "Ksp. Solid `brucite` is the Davies / total-concentration value, an upper bound; "
+                "dashed `brucite (PHREEQC)` carries the ion pairing and free-ion activities the "
+                "bound leaves out, and the gap between them -- 7-8x at this site -- is the "
+                "measured size of those terms. For the carbonates the two engines sit within a "
+                "few percent of each other on seawater."
+                if any(column.endswith("_phreeqc") for column in frame.columns)
+                else ""
+            )
         ),
         svg=drawing.svg(),
         drawing=drawing,
@@ -1666,6 +1703,82 @@ def _panel_saturation(plot: PlotFrame, units: UnitSystem) -> Panel:
             "free magnesium and hydroxide activities and so lower the ratio. It is also the one "
             "quantity here with no reference implementation to check against, because the "
             "original model cannot report it at all. Read it as a trend.",
+        ),
+    )
+
+
+def _panel_solver_comparison(plot: PlotFrame, units: UnitSystem) -> Panel:
+    """The two chemistry solvers side by side: port, near-field end, and the worst gap.
+
+    Table-only, because the lines are already on the pH and saturation panels (dashed); this is
+    where a reader gets the numbers -- the ratio of the two brucite values *is* the size of the
+    activity and ion-pairing terms the Davies column bounds (PORTING_THE_PHYSICS section 4).
+    """
+    frame = plot.frame
+    pairs = [
+        ("pH (total scale)", "ph_total", "ph_total_phreeqc", False),
+        ("pCO2 (uatm)", "pco2_uatm", "pco2_uatm_phreeqc", True),
+        ("carbonate (umol/kg)", "carbonate_umol_kg", "carbonate_umol_kg_phreeqc", True),
+        ("bicarbonate (umol/kg)", "bicarbonate_umol_kg", "bicarbonate_umol_kg_phreeqc", True),
+        ("omega aragonite", "omega_aragonite", "omega_aragonite_phreeqc", True),
+        ("omega calcite", "omega_calcite", "omega_calcite_phreeqc", True),
+        ("omega brucite", "omega_brucite", "omega_brucite_phreeqc", True),
+    ]
+    rows = []
+    for name, ours, theirs, ratio in pairs:
+        if ours not in frame.columns or theirs not in frame.columns:
+            continue
+        a = frame[ours].to_numpy(dtype=float)
+        b = frame[theirs].to_numpy(dtype=float)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            if ratio:
+                # The ratio farthest from 1 in either direction -- brucite's sits *below* 1 along
+                # the whole plume, so the largest ratio would be the *closest* agreement.
+                quotient = b / a
+                finite = np.isfinite(quotient) & (quotient > 0)
+                spread = (
+                    quotient[finite][np.argmax(np.abs(np.log10(quotient[finite])))]
+                    if finite.any()
+                    else np.nan
+                )
+            else:
+                spread = np.nanmax(np.abs(b - a))
+        rows.append(
+            {
+                "quantity": name,
+                "PyCO2SYS at the port": _short(float(a[0])),
+                "PHREEQC at the port": _short(float(b[0])),
+                "PyCO2SYS at the end": _short(float(a[-1])),
+                "PHREEQC at the end": _short(float(b[-1])),
+                "worst PHREEQC / PyCO2SYS" if ratio else "worst |difference|": _short(
+                    float(spread)
+                ),
+            }
+        )
+    table = pd.DataFrame(rows)
+    del units
+    return Panel(
+        key="solver-comparison",
+        title="The two chemistry solvers compared",
+        explanation=(
+            "Every row of this plume was solved twice from the same mixed alkalinity, DIC, "
+            "salinity and temperature: by PyCO2SYS (the model's default, the lineage of the "
+            "original executable's own carbonate code) and by PHREEQC with its Pitzer "
+            "ion-interaction database. pH and the carbonate columns agree to within a few percent "
+            "on seawater; the brucite saturation state does not, and the ratio in its row is the "
+            "measured size of the ion pairing and free-ion activity corrections that the default "
+            "column, an upper bound, leaves out. Ratios are the worst along the plume; the pH "
+            "row is the worst absolute difference."
+        ),
+        svg="",
+        drawing=None,
+        table=table,
+        notes=(
+            "PHREEQC's aragonite and calcite use its own solubility products and activities; on "
+            "the Macoma water they sit 2-10 % above Mucci's. Its brucite shares the default "
+            "column's Xiong (2008) Ksp, so that ratio is the activity treatment alone.",
+            "A pure-water effluent carries no magnesium at the port, so both brucite values are "
+            "zero there and grow as seawater is entrained; read that row at the end, not the port.",
         ),
     )
 
@@ -1941,6 +2054,8 @@ def build_panels(
         panels.append(_panel_ph(plot, units))
     if {"omega_aragonite", "omega_calcite"} & have and {"x_m", "y_m"} <= have:
         panels.append(_panel_saturation(plot, units))
+    if {"ph_total_phreeqc", "omega_brucite_phreeqc"} <= have:
+        panels.append(_panel_solver_comparison(plot, units))
     # The centreline-and-spread panels, when the frame carries a case to re-solve across the
     # section (a run, or a `.dat` with its case). A bare trace returns none of these and keeps the
     # flux-averaged panels above. Imported here rather than at module top: `chemistry_gradient`
@@ -1989,6 +2104,13 @@ _OVERLAY: tuple[tuple[str, str, str, bool, str], ...] = (
     (
         "omega_brucite",
         "Brucite saturation",
+        "saturation state \N{GREEK CAPITAL LETTER OMEGA}",
+        True,
+        "dilution",
+    ),
+    (
+        "omega_brucite_phreeqc",
+        "Brucite saturation (PHREEQC)",
         "saturation state \N{GREEK CAPITAL LETTER OMEGA}",
         True,
         "dilution",

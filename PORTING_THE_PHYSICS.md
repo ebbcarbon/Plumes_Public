@@ -19,7 +19,7 @@ Everything below is measured against runs of the real executable, archived in `r
 with their inputs recorded. Every figure is re-checked on demand — `plumes2 validate` runs the
 whole ledger and prints ours, the reference, and the error.
 
-⚠️ **Coverage is published, not implied.** 195 of the 195 countable findings in
+⚠️ **Coverage is published, not implied.** 202 of the 202 countable findings in
 [`LEDGER.md`](notes/LEDGER.md) are executable; the rest are marked with a named reason for why no
 measurement of ours can add to them. A validation report that shows only what passes is worse
 than none.
@@ -220,8 +220,9 @@ added — especially when the feedstock is Mg(OH)₂ — the near-field pH spike
 supersaturated with respect to brucite, and runaway brucite precipitation removes the very
 alkalinity the discharge was meant to deliver. `Ω_aragonite` cannot see that happening.
 
-On the dosed archived-diffuser case: **Ω_brucite = 131.4 at the port, 0.010 by 100× dilution** (on Xiong
-(2008)'s `log Ksp` = −10.95, adopted 2026-08-24; the superseded −11.16 read 213). Aragonite moves by
+On the dosed archived-diffuser case: **Ω_brucite = 146.3 at the port, 0.011 by 100× dilution** (on Xiong
+(2008)'s `log Ksp` = −10.95, adopted 2026-08-24, and with the product formed on the molal scale
+since 2026-09-10 — before that date the same run read 131.4 and 0.010; the superseded −11.16 read 213). Aragonite moves by
 a factor of 5 across the same trajectory; brucite moves by four orders of magnitude.
 
 ⚠️ **The risk window is centimetres, not tens of seconds — corrected 2026-08-25.** This document
@@ -255,8 +256,13 @@ only at the boundaries reports no brucite risk at all. See `studies/dose_dry_run
    | temperature, 25 → 10 °C | 1.007× — negligible |
    | **both dominant terms, worst case** | **5.37×** |
 
-   ⚠️ **Quote the 5.37× as a bound, not an error bar.** It combines independent worst cases; the
-   terms are not independent and the true spread is narrower. ⛔ **And two of these figures were
+   ⭐ **Measured 2026-09-09 by the second engine** (rows 287–289; the primer below): the Pitzer
+   treatment puts Ω **8–9× below** this column at the site, nearly flat from pH 7.7 to 12 — *outside*
+   the 5.37× worst case, because the MgOH⁺ share (3.1× on its own) was never one of the band's
+   terms. (Until 2026-09-10 the ratio read 7–8×: this column formed its product per kg of solution
+   against a molal `Ksp`, a 0.91 that pointed the other way and is now gone.) ⚠️ **Quote the 5.37× as
+   a bound, not an error bar.** It
+   combines independent worst cases; the terms are not independent and the true spread is narrower. ⛔ **And two of these figures were
    wrong until they were measured** — the activity term was published as "10–20 %" and temperature
    as "5 %". If you have quoted a brucite uncertainty from this document before that date, it was
    too small. **The absolute value is indicative; the salinity and pH trends are sound**, and they
@@ -264,6 +270,90 @@ only at the boundaries reports no brucite risk at all. See `studies/dose_dry_run
 3. **Ω is a thermodynamic statement, not a rate.** Supersaturation is necessary but not sufficient
    for precipitation — there is a nucleation barrier, and seawater sits supersaturated in aragonite
    routinely without precipitating. Do not infer alkalinity loss from Ω without a kinetic model.
+
+### A primer: total concentrations, activities, and what a Pitzer model adds
+
+*Written 2026-09-09 alongside the plan to add PHREEQC as a second brucite engine
+([`notes/PHREEQC_PLAN.md`](notes/PHREEQC_PLAN.md)); the terms are explained here so the numbers,
+when they arrive, land on defined words. Nothing in this section changes a result yet.*
+
+**Why Ω needs more than concentrations.** A solubility product is written in *activities* — the
+"effective" concentrations that thermodynamics actually responds to — not in the total amounts of
+an element dissolved. Seawater is a concentrated electrolyte (ionic strength about 0.7 mol/kg), and
+in it three things separate the measured total from the effective free ion:
+
+1. **Long-range electrostatics.** Every ion sits in a cloud of counter-ions that screens it, so it
+   behaves as if there were less of it. The *activity coefficient* γ is the correction: activity =
+   γ × concentration, with γ well below 1 for doubly-charged ions (γ(Mg²⁺) is about 0.2–0.35 in
+   seawater, γ(OH⁻) about 0.65–0.75).
+2. **Ion pairing.** Some of the "total" magnesium is not free at all: about a tenth of it sits as
+   MgSO₄⁰, and as pH rises an increasing share pairs with hydroxide as MgOH⁺. Paired ions do not
+   count towards the brucite product `a(Mg²⁺) a(OH⁻)²`.
+3. **The pH scale.** `[OH⁻]` is set by `Kw` and the pH, and a pH quoted on the free, total, seawater or
+   NBS scale differs by up to 0.13 units in seawater. Since `[OH⁻]` enters *squared*, a scale slip is
+   a silent factor of up to 1.8 in Ω rather than a visible error — which is why this port takes
+   `[OH⁻]` from the same speciation solve as everything else.
+
+**What the port does today.** `Ω_brucite = [Mg²⁺]_total [OH⁻]²_total / Ksp*`, where `Ksp*` is Xiong
+(2008)'s thermodynamic `Ksp` divided by γ(Mg²⁺) γ(OH⁻)² from the **Davies equation** — a
+one-parameter extension of Debye–Hückel that is honest to about I = 0.5 and is being used at 0.7.
+Ion pairing is not modelled at all. Both simplifications push Ω the same way, **upward**, which is
+what makes "upper bound" a defensible statement rather than a hedge; the measured size of the two
+terms together is the 2.14× row in the table above.
+
+**What a Pitzer model is.** Instead of one γ per charge from a formula, a Pitzer (ion-interaction)
+model carries a table of fitted parameters for every *pair* and *triple* of ions in the water —
+Na–Cl, Mg–SO₄, Mg–OH, Ca–Cl, … — regressed against measured solubilities and osmotic data up to
+several mol/kg. Activity coefficients come out of that table with the specific ions present, and
+the "pairing" is largely inside the parameters rather than a separate species list. It is the
+standard way to do concentrated-electrolyte thermodynamics, and it is what the commercial
+speciation packages are also built on; the difference between open and commercial implementations
+is the size of the parameter table, not the theory.
+
+**What PHREEQC is.** The US Geological Survey's open geochemical speciation program, driven here
+from Python. It takes a water's composition (major ions, temperature, alkalinity, dissolved
+inorganic carbon), solves the full speciation — every ion pair, every acid–base equilibrium, the
+activity coefficients — against a chosen thermodynamic *database*, and reports the **saturation
+index** `SI = log₁₀(IAP / Ksp)` of every mineral in that database, where IAP is the ion activity
+product. `Ω = 10^SI`. With its `pitzer.dat` database the activity model is the Pitzer one above,
+and the database carries brucite; the port will substitute Xiong's `log Ksp` for the database's own
+so the two engines share one constant and differ **only in how they get from totals to activities**.
+
+**How to read the two brucite columns, once both exist.** `omega_brucite` stays what it is — the
+Davies, total-concentration value, an upper bound. `omega_brucite_phreeqc` is the same water and
+the same `Ksp` through the Pitzer treatment. The two are kept side by side permanently (operator
+decision, 2026-09-09): their ratio *is* the measured size of the activity/ion-pairing term that
+today is only bounded, and a reader who sees one number would not know it had been chosen.
+
+⭐ **A first reading exists (the plan's spike, 2026-09-09, not yet in the code).** The plan predicted
+the Pitzer value 1.5–3× below the Davies one; the spike measured **7–8×** (8–9× since the Davies
+column moved to the molal basis on 2026-09-10), nearly flat from pH 7.7 to 12 — a miss worth
+understanding, because the mechanism is not the one the prediction named:
+
+| term | factor | what it is |
+|---|---|---|
+| `[OH⁻]²` | 3.1× | PyCO2SYS's hydroxide is a *total* — its seawater `Kw` is stoichiometric — and about **45 % of that total is the ion pair MgOH⁺** at pH 11–12. The brucite product wants the free `OH⁻`, squared |
+| `γ(OH⁻)²` | 1.9× | Pitzer gives γ(OH⁻) ≈ 0.54 in this water; Davies gives 0.75 |
+| `γ(Mg²⁺)` | 1.2× | Pitzer 0.26 against Davies 0.31 |
+| Mg pairing | 1.0–1.2× | small: 0.1 % of Mg is paired at the ambient, 16 % at TA 20 000 |
+
+So the pairing that matters is on the *hydroxide*, not the magnesium, and the activity error is
+almost entirely γ(OH⁻). Every term pushes the same way, so "upper bound" stands; the bound is looser
+than the Davies-range argument (2.14×) implied. Because `Ω_brucite = 1` is a pH threshold, a factor
+8–9 in Ω is **+0.46 to +0.47 in that threshold** (9.41 → ≈ 9.87 total at S 32 / T 10 °C), and the
+study's brucite ceiling rises with it: **TA\* 3630 by the bound, ≈ 4200 by Pitzer** at DIC 2092
+(the study now reports both; the TA 4000 cell reads Ω 3.6 by the bound and 0.44 by Pitzer). ⚠️ The MgOH⁺ share is a *database* statement — the formation
+constant in `pitzer.dat` — and is the largest single term, so the integration has to check that
+constant against the measured seawater value before the second column is quoted. On the carbonate
+side the two engines agree: given the same total boron, PHREEQC's total-scale pH matches PyCO2SYS's
+to 0.03 from pH 7.7 to 12.
+
+**What the second engine does not do.** It does not replace PyCO2SYS for pH or for `Ω_aragonite`
+— the parity to the exe is PyCO2SYS's. (A `carbonate.solver: phreeqc` setting does exist, for a
+run whose every column is on one activity model; on the site water its aragonite sits 2–10 % above
+Mucci's, so the carbonates agree to about the order the exe and PyCO2SYS do, and the brucite column
+is the one that differs.) It does not add kinetics (caveat 3 above stands). And its own temperature handling for brucite is a single van 't Hoff enthalpy — the
+residual the plan does not remove: at 11 °C the Pitzer value carries a wider band than at 25 °C.
 
 ### The model now tells you when a constant is out of range
 

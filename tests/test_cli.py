@@ -114,6 +114,9 @@ def test_info_does_not_run_the_model(tmp_path: Path, capsys) -> None:  # type: i
     assert main(["info", str(PROJECT)]) == 0
     printed = capsys.readouterr().out
     assert "ports" in printed and "termination" in printed
+    # The stored units are stated (row 290): test21 keeps its flow in m3/s under selector 2, the
+    # exe's *alternate* flow unit, and that is exactly the kind of thing the line exists to say.
+    assert "units" in printed and "effluent.flow: 0.005 m3/s (selector 2)" in printed
     # Nothing was written anywhere.
     assert not list(tmp_path.iterdir())
 

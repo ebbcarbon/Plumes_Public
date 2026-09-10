@@ -1118,3 +1118,27 @@ def test_the_turning_points_alternate_between_trapping_and_reversal() -> None:
     assert len(kinds) >= 4
     for first, second in itertools.pairwise(kinds):
         assert first != second, kinds
+
+
+@pytest.mark.slow
+def test_the_default_tolerance_is_converged_against_the_tight_one() -> None:
+    """The 2026-09-10 speed-up: `rtol` 1e-8 -> 1e-6 and `atol` 1e-11 -> 1e-9 by default.
+
+    LSODA is adaptive, so run time is the step count the tolerance buys, and the step count is set
+    by the tolerance alone (`samples` only reads the dense output). Measured on the Macoma site
+    case the change cut 4 073 steps to 1 762 and 8.6 s to 3.0 s while moving the dilution by at
+    most 4e-6 relative and the end time by nothing; the parity rows resolve 0.3 %. This pins that
+    the default stays converged against the old tight setting on a merging, cross-current
+    archived case, so a future loosening has to clear the same bar rather than inherit it.
+    """
+    from plumes2 import load_case
+
+    case = load_case(CASES / "case55_macoma_site" / "macoma_acute.yaml")
+    loose = integrate(case)
+    tight = integrate(case, rtol=1e-8, atol=1e-11)
+    assert loose.reason == tight.reason
+    assert loose.end_time == pytest.approx(tight.end_time, rel=1e-4)
+    times = np.linspace(0.0, min(loose.end_time, tight.end_time), 300)
+    drift = np.abs(np.asarray(loose.sample(times).dilution) / tight.sample(times).dilution - 1.0)
+    assert float(drift.max()) < 1e-4, f"dilution drifts {drift.max():.2e} between the tolerances"
+    assert len(loose.solution.t) < 0.6 * len(tight.solution.t), "the loosening must buy steps"

@@ -461,8 +461,29 @@ def calcium_from_salinity(salinity: ArrayLike) -> NDArray[np.float64]:
     return np.asarray(CALCIUM_AT_S35 * s / 35.0)
 
 
+#: Millero et al. (2008): absolute salinity 35.16504 g/kg at practical salinity 35, so the mass of
+#: dissolved salt per kg of solution is `S * 35.16504 / 35 / 1000`. Used for the per-kg-of-water
+#: conversion; the 0.5 % between absolute and practical salinity is inside the 3.5 % it corrects.
+ABSOLUTE_PER_PRACTICAL_SALINITY = 35.16504 / 35.0
+
+
+def water_fraction(salinity: ArrayLike) -> NDArray[np.float64]:
+    """Kilograms of water per kilogram of solution, `1 - S_A / 1000`.
+
+    The bridge between the two concentration bases this package meets. PyCO2SYS and the exe report
+    per kilogram of *solution*; a thermodynamic solubility product such as brucite's is defined on
+    the *molal* scale, per kilogram of *water*. Dividing a per-kg-of-solution concentration by this
+    fraction puts it on the molal scale; multiplying a molality by it brings it back. 0.969 at
+    S 30.9, 0.965 at S 35, 1 in pure water.
+    """
+    s = np.asarray(salinity, dtype=np.float64)
+    if np.any(s < 0):
+        raise ValueError("salinity must be non-negative")
+    return np.asarray(1.0 - s * ABSOLUTE_PER_PRACTICAL_SALINITY / 1000.0)
+
+
 def magnesium_from_salinity(salinity: ArrayLike) -> NDArray[np.float64]:
-    """Total magnesium, mol/kg: `[Mg2+] = 0.0528171 * S / 35`.
+    """Total magnesium, mol per kg of *solution*: `[Mg2+] = 0.0528171 * S / 35`.
 
     The same conservative scaling as `calcium_from_salinity`, and for the same reason: the
     major ions track salinity, so a diluting plume carries them down proportionally. Used by
@@ -716,6 +737,23 @@ def solubility_brucite(
     about getting from total concentrations to free-ion activities -- and together they rival the
     `Ksp` spread. A Pitzer treatment addresses both at once, which makes it one change against two
     of the three dominant terms rather than the last item on a list.
+
+    ⭐⭐ **Measured against a Pitzer treatment, 2026-09-09** (`chem/pitzer`, PHREEQC with
+    `pitzer.dat`, the same `Ksp`; ledger rows 287-289): this function's `Omega` sits **7-8x above**
+    the Pitzer value at the site (S 30.9, T 11.2), nearly flat from pH 7.7 to 12. Term by term:
+    `[OH-]^2` 3.1x -- PyCO2SYS's hydroxide is a *total* of which ~45 % is the MgOH+ pair at pH
+    11-12, and the product wants the free ion; `gamma(OH-)^2` 1.9x (Pitzer 0.54 against Davies'
+    0.75 here); `gamma(Mg2+)` 1.2x; Mg pairing 1.0-1.2x. So the pairing that matters is on the
+    hydroxide, not the magnesium this docstring foregrounds, and the activity error is nearly all
+    `gamma(OH-)`. ✅ **And one term pointed the other way, until 2026-09-10**: `omega_brucite`
+    used concentrations per kg of *solution* against this `Ksp`, which is defined on the *molal*
+    scale -- three concentration factors, so `Omega` read `(1 - S_A/1000)^3` = 0.91 at S 30.9
+    *below* the same physics on one basis. Corrected (operator, 2026-09-10): `omega_brucite` now
+    divides each concentration by `water_fraction(S)` before forming the product, every Davies
+    `Omega` rose ~10 % at seawater salinity (row 196's peak 131.4 -> 146.3) and the threshold pH
+    fell 0.02 (9.43 -> 9.41 at S 32 / 10 C); the Davies/Pitzer ratio is now the 8.2-8.7x the other
+    terms alone give (row 289: 7.9 -> 8.7 at TA 20 000). The two columns are kept side by side
+    permanently, this one as the bound.
 
     **Treat the absolute value as indicative and the trends as sound** -- the salinity and pH
     dependences rest on much firmer ground than the constant does. The 5.37x is a *bound* built

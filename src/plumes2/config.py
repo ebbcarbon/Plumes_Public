@@ -45,6 +45,7 @@ __all__ = [
     "AmbientProfile",
     "CarbonateSettings",
     "Case",
+    "ChemistrySolver",
     "ConstantRangeWarning",
     "DesignWarning",
     "Diffuser",
@@ -192,6 +193,35 @@ class ExeBuild(StrEnum):
     CURRENT = "current"
     #: Pre-2026. No angular correction at all: the width is the bare span plus a diameter.
     LEGACY = "legacy"
+
+
+class ChemistrySolver(StrEnum):
+    """Which engine re-solves the mixed (TA, DIC, S, T) row into pH and saturation states.
+
+    * `none`: no chemistry columns at all, even when the case carries the tables -- a plain
+      dilution run, or a chemistry-free comparison against an exe trace.
+    * `pyco2sys`: the default and the exe's lineage (PLAN section 2); `Omega_brucite` is the
+      Davies / total-concentration upper bound, and `carbonate.pitzer` may add the Pitzer
+      brucite column beside it.
+    * `phreeqc`: every chemistry column from PHREEQC with `pitzer.dat` (`chem/pitzer`):
+      pH on the total scale, the carbonate species, and the three saturation states from
+      free-ion activities -- so `omega_brucite` *is* the Pitzer value. Needs the
+      `plumes2[pitzer]` extra. Its `omega_aragonite` / `omega_calcite` are PHREEQC's own: on the
+      site water 2 % above Mucci's at ambient pH and ~10 % at a pH 10.5 port (PHREEQC_PLAN.md
+      section 8, row G); the column names are the same, the provenance names the solver. The
+      effluent endmember's (TA, pH) -> DIC resolution stays PyCO2SYS's under every solver: it
+      is the exe's input pairing, decoded from case03/case04, not a model.
+    * `all`: both engines on every row, for cross-comparison -- PyCO2SYS's columns under
+      their usual names and PHREEQC's beside them with a `_phreeqc` suffix
+      (`results.PHREEQC_COLUMNS`), so pH, the carbonate species and all three saturation
+      states can be read against each other row by row. The report draws the PHREEQC lines
+      dashed in the same colours and adds a comparison table.
+    """
+
+    NONE = "none"
+    PYCO2SYS = "pyco2sys"
+    PHREEQC = "phreeqc"
+    ALL = "all"
 
 
 class PHScale(StrEnum):
@@ -497,8 +527,11 @@ class EffluentChemistry(_Model):
 
 
 class CarbonateSettings(_Model):
-    """Equilibrium-constant options, matching the exe's dialog."""
+    """Equilibrium-constant options, matching the exe's dialog -- and which engine applies them."""
 
+    #: Which engine solves the chemistry: `none`, `pyco2sys` (default) or `phreeqc`. See
+    #: `ChemistrySolver`.
+    solver: ChemistrySolver = ChemistrySolver.PYCO2SYS
     #: 1-14, the classic CO2SYS numbering, which the exe's dialog reproduces exactly.
     #: 10 = Lueker et al. (2000) is both the exe's default and case03's selection.
     k1k2_option: Annotated[int, Field(ge=1, le=14)] = 10
@@ -529,6 +562,26 @@ class CarbonateSettings(_Model):
     #: a umol/kg treated as umol/L -- while leaving the ambient values alone, biasing the
     #: endmember 2.7 % high. Measured at 4000 -> 4108.4 and 1646 -> 1690.0 in case03/04.
     reproduce_effluent_concentration_scaling: bool = False
+    #: ⭐ The second brucite engine (`plumes2.chem.pitzer`): PHREEQC with the Pitzer ion-interaction
+    #: model, solving the same conservative (TA, DIC, S, T) row and adding `omega_brucite_phreeqc`
+    #: and `ph_total_phreeqc` beside the PyCO2SYS/Davies columns, which are unchanged. Opt-in and
+    #: **never a replacement** (operator, 2026-09-09): the two brucite columns are kept side by
+    #: side permanently, their ratio being the measured size of the activity and ion-pairing terms
+    #: the Davies column can only bound (PORTING_THE_PHYSICS §4). Needs `pip install
+    #: 'plumes2[pitzer]'`; a case that asks without it gets `PitzerUnavailableError`. Only
+    #: meaningful with `solver: pyco2sys` -- under `phreeqc` the column *is* the Pitzer value.
+    pitzer: bool = False
+
+    @model_validator(mode="after")
+    def _pitzer_needs_the_pyco2sys_solver(self) -> Self:
+        if self.pitzer and self.solver is not ChemistrySolver.PYCO2SYS:
+            raise ValueError(
+                f"carbonate.pitzer adds the Pitzer brucite column beside PyCO2SYS's; with solver "
+                f"'{self.solver.value}' it has nothing to sit beside -- drop it (under 'phreeqc' "
+                "omega_brucite is already the Pitzer value; under 'all' every PHREEQC column is "
+                "already there as *_phreeqc)"
+            )
+        return self
 
 
 class NearFieldSettings(_Model):

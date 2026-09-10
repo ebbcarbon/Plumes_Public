@@ -20,7 +20,9 @@ exe prints a `Time` column, so a trajectory can be compared to a trace *at the e
 printed times*, which decouples validating the physics from reproducing the exe's step
 controller. The controller (a 2 % mass-growth cap plus an unidentified second criterion, see
 PLAN.md Phase 5) only matters for row alignment and byte-exact output, and is applied
-separately in `steps.py` rather than being baked into the integration.
+separately in `steps.py` rather than being baked into the integration. Because LSODA picks its
+own steps, run time is a question of tolerance and of the cost of one right-hand side -- see
+`integrate` for the tolerance measurement -- and not of a step grid.
 
 Termination follows the manual's four benchmarks (§2.3.1) plus the GUI's stop-at-surface
 control; `terminate.py` will own the full rule set including the max-rise-or-fall switch.
@@ -433,10 +435,20 @@ def integrate(
     merging: MergingChoices | None = None,
     max_time: float = 3600.0,
     max_dilution: float | None = None,
-    rtol: float = 1e-8,
-    atol: float = 1e-11,
+    rtol: float = 1e-6,
+    atol: float = 1e-9,
 ) -> NearFieldSolution:
     """Integrate eqs 2-5 from the port until a termination benchmark is reached.
+
+    **Tolerances (2026-09-10).** LSODA is adaptive, so the step count -- and the run time, which
+    is all in the right-hand side -- is set by `rtol`/`atol`, not by an output grid. The defaults
+    were 1e-8 / 1e-11 until 2026-09-10; measured on the Macoma site case they cost 4 073 steps and
+    8.6 s, and loosening to **1e-6 / 1e-9** cut that to 1 762 steps and 3.0 s while moving the
+    dilution by at most 4e-6 relative anywhere on the trajectory and the end time by nothing
+    (1e-5 / 1e-8: 985 steps, 1.6 s, 5e-5; 1e-4: 584 steps, 0.9 s, 4e-4). The parity rows resolve
+    0.3 %, three orders coarser than the 1e-6 drift, and every ledger row was re-derived at the
+    new default before it landed (PLAN.md section 7, item 8). Pass the old values back for a
+    convergence check; the answer should not change in any printed digit.
 
     Stops on: the surface or the seabed being touched by the plume *edge* (the criterion
     measured in case06/case10, `depth - radius <= 0` and `depth + radius >= bottom`), the

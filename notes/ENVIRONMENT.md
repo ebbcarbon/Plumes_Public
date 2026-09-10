@@ -16,7 +16,7 @@ Pinned for the repo in [.python-version](../.python-version).
 
 ```powershell
 uv venv --python 3.14 .venv
-uv pip install --python .venv -e ".[compare,dev,notebook]"
+uv pip install --python .venv -e ".[compare,dev,notebook,pitzer]"
 ```
 
 Then activate with `.venv\Scripts\Activate.ps1`, or just call `.venv\Scripts\python.exe`
@@ -41,6 +41,7 @@ Declared in [pyproject.toml](../pyproject.toml) under `[project].dependencies`.
 | pydantic | 2.13.4 | >=2.9 | input validation (physical ranges, monotonic depth profiles) |
 | PyCO2SYS | 1.8.3.4 | >=1.8.3 | carbonate speciation (`plumes2.chem`); constant selections tracked explicitly |
 | autograd | 1.9.1 | — | (PyCO2SYS transitive) |
+| phreeqpython | 1.6.2 | >=1.6.2 (`pitzer` extra) | PHREEQC / `pitzer.dat`, the second brucite engine (`plumes2.chem.pitzer`, 2026-09-09); Apache-2.0; the sdist bundles the IPhreeqc library for Windows, Linux and macOS and installs on 3.13/3.14 without a compiler (PyPI wheels are 3.12-only) |
 
 **PyCO2SYS moved from the `compare` extra to a runtime dependency on 2026-08-12**
 (PLAN.md §2). The original plan was to port the exe's own embedded CO2SYS and keep

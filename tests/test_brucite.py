@@ -19,6 +19,7 @@ from plumes2.chem.constants import (
     ionic_strength_from_salinity,
     magnesium_from_salinity,
     solubility_brucite,
+    water_fraction,
 )
 from plumes2.chem.saturation import omega_brucite
 from plumes2.chem.speciation import solve_from_alkalinity_dic
@@ -47,8 +48,29 @@ def test_omega_scales_as_the_square_of_hydroxide() -> None:
 
 def test_omega_scales_linearly_in_magnesium_and_inversely_in_ksp() -> None:
     base = omega_brucite(1e-5, 35.0, KSP)
-    assert omega_brucite(1e-5, 17.5, KSP) == pytest.approx(base / 2), "Mg tracks salinity"
+    # Mg tracks salinity -- and since 2026-09-10 the product is formed per kg of *water*, so
+    # halving S also moves the three per-kg-of-solution -> molal factors: `(w35 / w17.5)**3`,
+    # a little under 1 because the fresher water has more water per kilogram.
+    basis = (float(water_fraction(35.0)) / float(water_fraction(17.5))) ** 3
+    assert omega_brucite(1e-5, 17.5, KSP) == pytest.approx(base / 2 * basis), "Mg tracks salinity"
+    assert 0.94 < basis < 0.96, "the basis factor is a few percent, not the halving itself"
     assert omega_brucite(1e-5, 35.0, 2 * KSP) == pytest.approx(base / 2)
+
+
+def test_omega_is_formed_on_the_molal_scale() -> None:
+    """The 2026-09-10 correction: per-kg-of-solution inputs, a molal `Ksp`, one basis.
+
+    `hydroxide` and `magnesium_from_salinity` are per kg of solution (PyCO2SYS's basis); `Ksp*`
+    is per kg of water. The product must divide each of the three concentration factors by the
+    water fraction, so it reads `1 / water_fraction**3` above the naive per-kg-of-solution
+    product -- 1.10 at S 30.9, 1.11 at S 35 -- and exactly the naive product in pure water.
+    """
+    for salinity in (30.9, 35.0):
+        naive = float(magnesium_from_salinity(salinity)) * 1e-5 * 1e-5 / KSP
+        ratio = float(omega_brucite(1e-5, salinity, KSP)) / naive
+        assert ratio == pytest.approx(1.0 / float(water_fraction(salinity)) ** 3, rel=1e-12)
+        assert 1.09 < ratio < 1.12
+    assert float(water_fraction(0.0)) == 1.0
 
 
 def test_the_solubility_product_is_required_and_must_be_physical() -> None:
@@ -305,12 +327,14 @@ def brucite_saturation_ph_total(salinity: float, temperature: float) -> float:
     `Kw` is recovered from a PyCO2SYS solve at the same S and T -- the same constant and scale
     `omega_brucite` is fed from -- so this is the analytical limit PLAN 8b asked for, not a
     second model. The TA/DIC used to get `Kw` are immaterial: `Kw` depends on S and T only.
+    Since 2026-09-10 `omega_brucite` forms its product on the molal scale, so `[Mg2+]` and
+    `[OH-]*` here are per kg of solution and the `Ksp*` is scaled by `water_fraction**3`.
     """
     state = solve_from_alkalinity_dic(
         np.array([2300.0]), np.array([2000.0]), np.array([salinity]), np.array([temperature])
     )
     kw = float(10.0 ** (-state.ph_total[0]) * state.hydroxide[0] * 1e-6)
-    ksp = float(solubility_brucite(salinity, temperature))
+    ksp = float(solubility_brucite(salinity, temperature)) * float(water_fraction(salinity)) ** 3
     hydroxide_star = np.sqrt(ksp / float(magnesium_from_salinity(salinity)))
     return float(-np.log10(kw / hydroxide_star))
 
@@ -326,13 +350,15 @@ def test_the_saturation_ph_is_about_nine_point_four_in_cold_coastal_water() -> N
     ⚠️ **It moves strongly with temperature, and the reason is row 197's.** Brucite dissolution
     is athermal, so `Ksp*` barely moves, but `Kw` is not: `pKw` falls ~0.04 per °C, so a warmer
     water needs a *lower* pH to reach the same `[OH-]` and the threshold falls ~0.05 pH per °C --
-    8.95 at 20 °C, 9.43 at 10 °C, 9.80 at 2 °C. A study quoting one threshold pH must say the
+    8.93 at 20 °C, 9.41 at 10 °C, 9.78 at 2 °C. A study quoting one threshold pH must say the
     temperature it is for; a cold ambient is the *more* protective case against brucite.
+    (Until 2026-09-10 these read 0.02 higher -- 8.95 / 9.43 / 9.80 -- with the product formed per
+    kg of solution; the molal basis is `1.5 log10(water_fraction)` = -0.02 in pH*.)
     """
-    assert brucite_saturation_ph_total(32.0, 10.0) == pytest.approx(9.43, abs=0.02)
-    assert brucite_saturation_ph_total(35.0, 10.0) == pytest.approx(9.38, abs=0.02)
-    assert brucite_saturation_ph_total(35.0, 20.0) == pytest.approx(8.95, abs=0.03)
-    assert brucite_saturation_ph_total(32.0, 2.0) == pytest.approx(9.80, abs=0.03)
+    assert brucite_saturation_ph_total(32.0, 10.0) == pytest.approx(9.41, abs=0.02)
+    assert brucite_saturation_ph_total(35.0, 10.0) == pytest.approx(9.35, abs=0.02)
+    assert brucite_saturation_ph_total(35.0, 20.0) == pytest.approx(8.93, abs=0.03)
+    assert brucite_saturation_ph_total(32.0, 2.0) == pytest.approx(9.78, abs=0.03)
 
 
 def test_the_saturation_ph_tracks_ksp_as_half_its_log() -> None:

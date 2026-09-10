@@ -101,6 +101,10 @@ class Provenance:
     platform: str
     #: Where the case came from, when it came from a file.
     source: str | None = None
+    #: The optional second chemistry engine, when the case asked for it (`carbonate.pitzer`):
+    #: PHREEQC's database, the phreeqpython version and the brucite re-parameterisation, because
+    #: `omega_brucite_phreeqc` cannot be reproduced without knowing all three.
+    chemistry_engines: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -125,6 +129,8 @@ class Provenance:
         ]
         if self.source:
             rows.append(("source", self.source))
+        if self.chemistry_engines:
+            rows.append(("engines", self.chemistry_engines))
         width = max(len(name) for name, _ in rows)
         return [f"{prefix}{name.ljust(width)}  {value}" for name, value in rows]
 
@@ -143,6 +149,16 @@ def provenance(
     """
     commit, dirty = git_state(repository)
     stamp = (now or datetime.now(UTC)).astimezone(UTC)
+    engines = None
+    if case.carbonate.pitzer or case.carbonate.solver.value in ("phreeqc", "all"):
+        # `record()` reads the installed version and the constants; it does not build the engine.
+        from plumes2.chem.pitzer import record
+
+        role = {
+            "phreeqc": "solver: phreeqc (every chemistry column); ",
+            "all": "solver: all -- pyco2sys, and every column again as *_phreeqc by ",
+        }.get(case.carbonate.solver.value, "solver: pyco2sys; omega_brucite_phreeqc by ")
+        engines = role + record().describe()
     return Provenance(
         port_version=__version__,
         case_digest=case_digest(case),
@@ -152,4 +168,5 @@ def provenance(
         python_version=sys.version.split()[0],
         platform=platform.platform(),
         source=str(source) if source is not None else None,
+        chemistry_engines=engines,
     )

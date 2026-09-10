@@ -38,8 +38,8 @@ docs/api/
 studies/**/*.png
 studies/**/run.log
 
-# Generated reports. The whole folder is local: nothing under reports/ is tracked, so a clone of
-# the public repository has no reports/ directory at all. A report can still be pushed into git
-# deliberately with `git add -f reports/<name>` -- and from then on it is public, so opt in only
-# what is meant to be. `plumes2 report CASE -o reports/<date>_<case>/<case>.pdf` writes here.
+# Generated reports. Local by default: nothing under reports/ is tracked unless added by force
+# (`git add -f reports/<date>_<name>`), which the operator does for the reports worth keeping
+# (2026-09-09's, for instance). Tracked or not, `.publicignore` withholds the whole folder from
+# the public snapshot. `plumes2 report CASE -o reports/<date>_<case>/<case>.pdf` writes here.
 reports/

@@ -29,7 +29,7 @@ environment exists.
 
 ```powershell
 uv venv --python 3.14 .venv
-uv pip install --python .venv -e ".[compare,dev,notebook]"       # first time only
+uv pip install --python .venv -e ".[compare,dev,notebook,pitzer]"  # first time only; pitzer = the optional PHREEQC engine (§8.4)
 uv pip install --python .venv -r requirements.lock.txt           # or: the exact pinned set
 uv pip install --python .venv -e . --no-deps
 ```
@@ -171,8 +171,10 @@ plumes2 info CASE
 
 Prints ports and spacing; port diameter and angles; port depth and seabed; flow, salinity,
 temperature; ambient level count and current range; whether an effluent chemistry endmember and an
-ambient chemistry table are present; and the termination settings (max rise/fall, stop at surface,
-stop at bottom).
+ambient chemistry table are present; the termination settings (max rise/fall, stop at surface,
+stop at bottom); and **the unit each `.prj` table is stored in** — for a `.prj` input, what the
+file carries; for a YAML case, what a written `.prj` would carry — listing every column not in its
+primary unit (see §4.8 on why a metric case can come out in feet).
 
 ### `plumes2 convert` — `.prj` ↔ `.yaml`
 
@@ -385,6 +387,7 @@ exe's own rule (case03 entered DIC 0 and it used TA + pH; case04 gave a DIC and 
 
 | field | type | unit | default | meaning |
 |---|---|---|---|---|
+| `solver` | enum | — | `pyco2sys` | which engine re-solves the mixed row: `none` (no chemistry columns), `pyco2sys` (the exe's lineage), `phreeqc` (every column from PHREEQC / Pitzer), `all` (both, side by side, for cross-comparison) — §8.4 |
 | `k1k2_option` | int 1…14 | — | `10` | CO2SYS K1/K2 option, the exe's numbering (§8.1). 10 = Lueker et al. 2000, the exe's default |
 | `kso4_option` | int 1…4 | — | `1` | bisulfate **and** total-borate pair (§8.2). 1 = Dickson 1990 + Uppström 1974, the exe's default |
 | `calcite_log_k` | float | — | `-0.106` | Zhong & Mucci rate constant; `K = exp(log_k)`, not `10^` |
@@ -396,6 +399,7 @@ exe's own rule (case03 entered DIC 0 and it used TA + pH; case04 gave a DIC and 
 | `reproduce_undersaturated_nan` | bool | — | `false` | ⚠️ defect flag: the exe's `(Ω−1)^N` is NaN for Ω < 1 and poisons the run; we return 0 |
 | `reproduce_aragonite_band_gap` | bool | — | `false` | ⚠️ defect flag: the exe reports zero aragonite rate for 25 ≤ S ≤ 35 |
 | `reproduce_effluent_concentration_scaling` | bool | — | `false` | ⚠️ defect flag: the exe multiplies effluent TA/DIC by density in kg/L (a µmol/kg treated as µmol/L, +2.7 %) |
+| `pitzer` | bool | — | `false` | ⭐ the second brucite engine (§8.4): PHREEQC / Pitzer adds `omega_brucite_phreeqc` and `ph_total_phreeqc` beside the unchanged columns; needs `pip install 'plumes2[pitzer]'` |
 
 ### 3.10 `effluent_do` (mg/L)
 
@@ -444,6 +448,15 @@ exe's own rule (case03 entered DIC 0 and it used TA + pH; case04 gave a DIC and 
 | `total` | what the exe *reports* on its default constants, and what our `ph_total` column is |
 | `seawater` | |
 | `nbs` | |
+
+<!-- enum: plumes2.config.ChemistrySolver -->
+
+| value | meaning |
+|---|---|
+| `none` | no chemistry columns, even when the case carries the tables — a plain dilution run |
+| `pyco2sys` | **default**; the exe's lineage — `omega_brucite` is the Davies upper bound, and `carbonate.pitzer` may add the Pitzer column beside it |
+| `phreeqc` | every chemistry column from PHREEQC / `pitzer.dat` on free-ion activities — `omega_brucite` *is* the Pitzer value; its carbonate minerals sit 2–10 % above Mucci's on the site water (§8.4); needs `plumes2[pitzer]` |
+| `all` | both engines on every row for cross-comparison: PyCO2SYS's columns under their usual names and PHREEQC's beside them as `*_phreeqc` (the `PHREEQC_COLUMNS` table, §6.1); the report draws the PHREEQC lines dashed and adds a comparison table |
 
 <!-- enum: plumes2.crossplume.SimilarityProfile -->
 
@@ -640,6 +653,7 @@ then `error`, `warnings`.
 | `port_ph_total`, `port_dic_umol_kg`, `port_omega_brucite`, `port_omega_aragonite` | first near-field row |
 | `nearfield_peak_omega_brucite`, `nearfield_peak_ph_total` | maxima anywhere in the near field |
 | `nearfield_end_distance_m`, `nearfield_end_time_s`, `nearfield_end_ph_total`, `nearfield_end_omega_brucite` | where the near field stops |
+| `port_omega_brucite_phreeqc`, `nearfield_peak_omega_brucite_phreeqc`, `nearfield_end_omega_brucite_phreeqc` | the same three readings from the second engine — only when `carbonate.pitzer` is on |
 | `omega1_dilution`, `omega1_time_s`, `omega1_distance_m` | where Ω_brucite last falls through 1 (log-interpolated) |
 | `omega1_region` | `never` (port already under-saturated), `nearfield`, `farfield`, or `beyond_farfield` (still > 1 where the tables end; values are then the last row and a **floor**) |
 
@@ -710,7 +724,18 @@ dat.echoed_tables["Diffuser"]    # the input echo (two decimals -- read inputs f
 dat.wastefield_width, dat.eddy_diffusivity_law, dat.merged, dat.has_farfield, dat.final_step
 
 write_prj(prj_from_case(case), "generated.prj")   # byte-formatted as the exe writes them
+written_units(prj_from_case(case))                 # ["diffuser.port_spacing: 2 ft (selector 2)", ...]
 ```
+
+⚠️ **A written `.prj` may store a value in feet or MGD.** Each `.prj` column carries an integer
+unit selector (`plumes2.units`), and the writer picks, per value, the *evidenced* unit that survives
+the format's three significant figures best: 0.6096 m is written as `2.00` under the feet flag
+because 0.610 m would be 0.07 % off. The exe reads either correctly — ledger row 290 pins it on
+case55, where the site's spacing and both mixing-zone distances went out in feet and came back
+labelled `(ft)` with the wastefield width right to 0.01 m — but a person opening the file in the
+GUI sees the stored number in the stored unit. `written_units` lists every such column; `plumes2
+info` prints it and every experiment note carries it. Read a `.prj` value together with its
+dropdown, never alone (the Dec-2025 feet-as-metres slip, row 49, is what this guards against).
 
 Exe column → our name (`plumes2.plotframe`): `Dilutn`/`Avg-Dil` → `dilution`, `CL-Dil` →
 `centreline_dilution`, `P-dia` → `plume_diameter_m`, `Depth` → `depth_m` (sign flipped),
@@ -896,6 +921,31 @@ Appended when chemistry runs (both endmembers given):
 | `omega_aragonite` | ours runs 2.8–3.4 % above the exe's — a recorded, bounded disagreement |
 | `omega_brucite` | `[Mg²⁺][OH⁻]² / Ksp*`, **an upper bound** (no ion pairing); the exe cannot report it — PLAN_HISTORY §8b |
 
+Appended after those when `carbonate.pitzer` is on (§8.4):
+
+<!-- columns: plumes2.results.PITZER_COLUMNS -->
+
+| column | meaning |
+|---|---|
+| `omega_brucite_phreeqc` | `a(Mg²⁺) a(OH⁻)² / Ksp` by PHREEQC / `pitzer.dat` — free-ion activities, ion pairing included; 8–9× below `omega_brucite` at the site, and kept beside it, never in its place |
+| `ph_total_phreeqc` | PHREEQC's pH on the total scale, per kg of solution — a diagnostic; agrees with `ph_total` to 0.03 from pH 7.7 to 12 |
+
+Appended instead when `carbonate.solver` is `all` (§8.4) — every non-conservative chemistry column a
+second time, by PHREEQC, so the two engines can be read row against row (TA and DIC are not
+repeated; they are identical under every solver):
+
+<!-- columns: plumes2.results.PHREEQC_COLUMNS -->
+
+| column | meaning |
+|---|---|
+| `ph_total_phreeqc` | PHREEQC's pH on the total scale, per kg of solution |
+| `pco2_uatm_phreeqc` | from the saturation index of CO₂(g) |
+| `carbonate_umol_kg_phreeqc` | total [CO₃²⁻]: free plus the MgCO₃ pair |
+| `bicarbonate_umol_kg_phreeqc` | free [HCO₃⁻] |
+| `omega_calcite_phreeqc` | `10^SI`, PHREEQC's own `Ksp` and activities |
+| `omega_aragonite_phreeqc` | `10^SI`, PHREEQC's own `Ksp` and activities — 2–10 % above Mucci's on the site water |
+| `omega_brucite_phreeqc` | `a(Mg²⁺) a(OH⁻)² / Ksp`, free-ion activities, the same Xiong `Ksp` as `omega_brucite` |
+
 Appended when DO runs:
 
 <!-- columns: plumes2.results.OXYGEN_COLUMNS -->
@@ -990,7 +1040,7 @@ outside 10 and inside 13.
 | quantity | value | where |
 |---|---|---|
 | brucite `log Ksp` (25 °C) | **−10.95 ± 0.2** (Xiong 2008, adopted 2026-08-24); superseded −11.16 available as `log_ksp_25c=` | `chem.constants.solubility_brucite` |
-| Ω_brucite = 1 as a pH threshold | `pH* = −log₁₀(Kw / √(Ksp*/[Mg²⁺]))`: **9.43 total at S 32, 10 °C**; 8.95 at 20 °C; 9.80 at 2 °C (≈ 0.05 pH per °C, from `Kw`) | PLAN_HISTORY §8f |
+| Ω_brucite = 1 as a pH threshold | `pH* = −log₁₀(Kw / √(Ksp* w³ / [Mg²⁺]))`, `w` the water fraction (kg water per kg solution; the product is molal since 2026-09-10): **9.41 total at S 32, 10 °C**; 8.93 at 20 °C; 9.78 at 2 °C (≈ 0.05 pH per °C, from `Kw`) | PLAN_HISTORY §8f; `tests/test_brucite.py` |
 | extent on the fixed-DIC axis | `D* = (TA_eff − TA_amb) / (TA* − TA_amb)`, `TA* ≈ 4340 µmol/kg` at DIC 2500 — linear in dose | PLAN_HISTORY §8f |
 | `[Mg²⁺]`, `[Ca²⁺]` | `0.0528171 · S/35`, `0.01028 · S/35` mol/kg | `chem.constants` |
 | pH parity window | 7.5–12.05 total (exe vs PyCO2SYS: 0.011–0.025 pH, gap narrows above 11.5) | `chem.constants.PH_PARITY_WINDOW` |
@@ -998,6 +1048,53 @@ outside 10 and inside 13.
 | near-field accuracy vs the exe | 0.31 % jet phase; ~1.7 % after trapping; 1–7 % deeply merged (`d/L` > 3) | PORTING_THE_PHYSICS §1 |
 
 ---
+
+### 8.4 `solver` and `pitzer` — which engine, and the second brucite column
+
+`carbonate.solver` picks the engine that re-solves every mixed row. `none` runs the plume with no
+chemistry columns at all, whatever tables the case carries. `pyco2sys`, the default, is the exe's
+lineage and the engine every parity row was measured on. `phreeqc` hands the whole system to
+PHREEQC with `pitzer.dat`: `ph_total` (built on the total scale, per kg of solution), the carbonate
+species, `pco2_uatm`, and the three saturation states from free-ion activities — the column names
+do not change, and `provenance.yaml`'s `chemistry_engines` names the solver. Under `phreeqc`
+the carbonate minerals are PHREEQC's own: on the site water they sit **2 % above** Mucci's /
+PyCO2SYS's at ambient pH and about 10 % above at a pH 10.5 port, one-signed, so the two engines
+agree on the carbonates to the same order as the exe and PyCO2SYS do (3 %); the brucite column is
+the one that differs, 8–9×, and is what `phreeqc` is for. The effluent's `(TA, pH) → DIC` resolution stays PyCO2SYS's under every
+solver — it is the exe's decoded input pairing, not a model choice. `pitzer: true` is only valid
+with the default solver (it adds the Pitzer brucite column *beside* PyCO2SYS's); with `phreeqc`
+that column already is the Pitzer value and the setting is rejected.
+
+**Cross-comparison: `solver: all`.** Every row is solved by both engines. PyCO2SYS's columns keep
+their names; PHREEQC's follow as `*_phreeqc` (§6.1). The report's pH and saturation panels draw the
+PHREEQC values as dashed lines in the mineral's own colour, and a *solver comparison* panel tabulates
+port, near-field-end and worst-gap values for pH, pCO₂, the carbonate species and the three
+saturation states. `brucite_extract` reads the `_phreeqc` brucite column in this mode too, under the
+same `*_omega_brucite_phreeqc` keys. `pitzer: true` is rejected under `all` (every PHREEQC column is
+already there).
+
+
+`omega_brucite` is `[Mg²⁺][OH⁻]² / Ksp*` with total concentrations and Davies activity coefficients:
+an **upper bound**, because ion pairing is not modelled and Davies is used past its range
+(PORTING_THE_PHYSICS §4 explains the terms). Setting `carbonate.pitzer: true` solves the same
+conservative `(TA, DIC, S, T)` row a second time through **PHREEQC** with its `pitzer.dat`
+ion-interaction database (Brucite re-parameterised to the same Xiong 2008 `Ksp` the first column
+uses) and appends `omega_brucite_phreeqc` and `ph_total_phreeqc`. Nothing else changes: pH, the
+carbonate columns and `omega_brucite` are exactly what they were.
+
+```powershell
+.venv\Scripts\python.exe -m pip install "plumes2[pitzer]"     # phreeqpython; no compiler, nothing on PATH
+```
+
+Read the two brucite columns together. At the Macoma site the Pitzer value sits **8–9× below**
+the bound, nearly flat from pH 7.7 to 12; the factor is mostly the hydroxide (PyCO2SYS's `[OH⁻]` is
+a total of which ~45 % is the MgOH⁺ pair at pH 11–12, and it enters squared) and Pitzer's
+γ(OH⁻) ≈ 0.54 against Davies' 0.75. Because `Ω_brucite = 1` is a pH threshold, a factor 7–8 in Ω
+is +0.42 to +0.46 in that threshold. The two columns are kept side by side permanently; the report's
+saturation panel draws both, and `brucite_extract` carries both. Without the extra installed a case
+that asks raises `PitzerUnavailableError` naming the install line; a row PHREEQC cannot converge is
+NaN and named in a `PitzerConvergenceWarning`. The `provenance.yaml` of a run records the engine
+(`chemistry_engines`).
 
 ## 9. Tests, lint, types, docs
 

@@ -38,8 +38,8 @@ from plumes2.ambient import AmbientProfileView
 from plumes2.biochem.do_bod import near_field_oxygen_for
 from plumes2.chem.constants import resolve_constants, solubility_brucite
 from plumes2.chem.speciation import solve_from_alkalinity_dic
-from plumes2.chem.transport import effluent_endmember, plume_carbonate
-from plumes2.config import Case
+from plumes2.chem.transport import effluent_endmember, mix
+from plumes2.config import Case, ChemistrySolver
 from plumes2.crossplume import centreline_dilution, peak_to_mean
 from plumes2.farfield.brooks import BrooksParameters
 from plumes2.io.yaml_case import dump_case
@@ -51,6 +51,8 @@ __all__ = [
     "FARFIELD_COLUMNS",
     "NEARFIELD_COLUMNS",
     "OXYGEN_COLUMNS",
+    "PHREEQC_COLUMNS",
+    "PITZER_COLUMNS",
     "Results",
     "mixing_zone_values",
     "run",
@@ -99,6 +101,32 @@ CHEMISTRY_COLUMNS: dict[str, str] = {
     "omega_brucite": "[Mg2+][OH-]^2 / Ksp*, an upper bound (no ion pairing) -- PLAN.md 8b",
 }
 
+#: Appended after `CHEMISTRY_COLUMNS` when `carbonate.pitzer` is on: the same conservative row
+#: solved by PHREEQC / pitzer.dat (`chem/pitzer`). Kept beside `omega_brucite`, never in its
+#: place -- the ratio of the two is the measured size of the activity and ion-pairing terms the
+#: Davies column bounds (7-8x at the site; PORTING_THE_PHYSICS section 4). `ph_total_phreeqc` is
+#: the diagnostic: it agrees with `ph_total` to 0.03 from pH 7.7 to 12, which is what licenses
+#: reading the brucite columns against each other.
+PITZER_COLUMNS: dict[str, str] = {
+    "omega_brucite_phreeqc": "a(Mg2+) a(OH-)^2 / Ksp by PHREEQC/pitzer.dat -- free-ion activities",
+    "ph_total_phreeqc": "PHREEQC's pH on the total scale, per kg of solution -- a diagnostic",
+}
+
+#: Appended after `CHEMISTRY_COLUMNS` under `carbonate.solver: all`: every non-conservative
+#: chemistry column a second time, from PHREEQC / pitzer.dat, with a `_phreeqc` suffix -- so the
+#: two engines can be read against each other row by row. TA and DIC are not repeated: they
+#: mix conservatively and are identical under every solver. The two brucite/pH columns are
+#: the same quantities `PITZER_COLUMNS` carries, under the same names.
+PHREEQC_COLUMNS: dict[str, str] = {
+    "ph_total_phreeqc": "PHREEQC's pH on the total scale, per kg of solution",
+    "pco2_uatm_phreeqc": "partial pressure of CO2 from the SI of CO2(g)",
+    "carbonate_umol_kg_phreeqc": "total [CO3--]: free plus the MgCO3 pair",
+    "bicarbonate_umol_kg_phreeqc": "free [HCO3-]",
+    "omega_calcite_phreeqc": "10**SI(Calcite), PHREEQC's own Ksp and activities",
+    "omega_aragonite_phreeqc": "10**SI(Aragonite), PHREEQC's own Ksp and activities",
+    "omega_brucite_phreeqc": "a(Mg2+) a(OH-)^2 / Ksp by PHREEQC/pitzer.dat -- free-ion activities",
+}
+
 #: Appended when the case carries dissolved oxygen. One column, because DO is the only quantity
 #: the module produces in the near field -- the BOD channels are provably inert there, so carrying
 #: them would be columns of constants. See `biochem/do_bod.py`.
@@ -131,6 +159,10 @@ class Results:
     nearfield: pd.DataFrame
     #: Whether the chemistry columns are present.
     has_chemistry: bool
+    #: Whether `PITZER_COLUMNS` follow them (`carbonate.pitzer`, and chemistry ran).
+    has_pitzer: bool
+    #: Whether `PHREEQC_COLUMNS` follow them (`carbonate.solver: all`, and chemistry ran).
+    has_comparison: bool
     #: Whether the dissolved-oxygen column is present.
     has_oxygen: bool
     #: Brooks far field, or `None` when the case disables it or the current is zero.
@@ -212,6 +244,8 @@ def run(case: Case, *, samples: int = 200, source: str | Path | None = None) -> 
         provenance=provenance(case, source=source),
         nearfield=frame,
         has_chemistry=chemistry is not None,
+        has_pitzer=chemistry is not None and case.carbonate.pitzer,
+        has_comparison=chemistry is not None and case.carbonate.solver is ChemistrySolver.ALL,
         has_oxygen=oxygen is not None,
         farfield=_farfield(case, frame),
         termination=solution.reason,
@@ -228,6 +262,8 @@ def _chemistry(case: Case, trajectory) -> pd.DataFrame | None:  # type: ignore[n
     """
     if case.effluent_chemistry is None or not case.ambient.has_chemistry:
         return None
+    if case.carbonate.solver is ChemistrySolver.NONE:
+        return None
 
     view = AmbientProfileView(case.ambient)
     depth = -trajectory.z
@@ -239,14 +275,97 @@ def _chemistry(case: Case, trajectory) -> pd.DataFrame | None:  # type: ignore[n
         settings=case.carbonate,
         constants=constants,
     )
-    state = plume_carbonate(
-        endmember,
-        view.total_alkalinity(depth),
-        view.dic(depth),
-        trajectory.dilution,
+    return _carbonate_frame(
+        case,
+        constants,
+        mix(endmember.total_alkalinity, view.total_alkalinity(depth), trajectory.dilution),
+        mix(endmember.dic, view.dic(depth), trajectory.dilution),
         trajectory.salinity,
         trajectory.temperature,
+        index=None,
+        context="plume trajectory",
+    )
+
+
+def _carbonate_frame(  # type: ignore[no-untyped-def]
+    case: Case,
+    constants,
+    total_alkalinity,
+    dic,
+    salinity,
+    temperature,
+    *,
+    index,
+    context: str,
+) -> pd.DataFrame:
+    """`CHEMISTRY_COLUMNS` (plus `PITZER_COLUMNS`) for mixed rows, by the case's solver.
+
+    The mixing is done by the caller and is the same under every solver -- TA and DIC are
+    conservative (`chem/transport.py`); only the re-solve differs. `pyco2sys` is the default and
+    the exe's lineage; `phreeqc` solves the whole system through `chem/pitzer`, so every column
+    is on free-ion activities and `omega_brucite` is the Pitzer value; `none` never reaches here.
+    """
+    solver = case.carbonate.solver
+    if solver is ChemistrySolver.PHREEQC:
+        return _phreeqc_frame(constants, total_alkalinity, dic, salinity, temperature, index)
+    frame = _pyco2sys_frame(
+        constants, total_alkalinity, dic, salinity, temperature, index, context=context
+    )
+    if solver is ChemistrySolver.ALL:
+        theirs = _phreeqc_frame(constants, total_alkalinity, dic, salinity, temperature, index)
+        theirs = theirs.drop(columns=["total_alkalinity_umol_kg", "dic_umol_kg"])
+        theirs.columns = [f"{column}_phreeqc" for column in theirs.columns]
+        frame = pd.concat([frame, theirs[list(PHREEQC_COLUMNS)]], axis=1)
+        assert list(frame.columns) == [*CHEMISTRY_COLUMNS, *PHREEQC_COLUMNS]
+    elif case.carbonate.pitzer:
+        state = frame.attrs["state"]
+        frame = pd.concat([frame, _pitzer(state, constants, frame.index)], axis=1)
+    frame.attrs.pop("state", None)
+    return frame
+
+
+def _phreeqc_frame(  # type: ignore[no-untyped-def]
+    constants, total_alkalinity, dic, salinity, temperature, index
+) -> pd.DataFrame:
+    """`CHEMISTRY_COLUMNS` from PHREEQC / pitzer.dat: every column on free-ion activities."""
+    from plumes2.chem.pitzer import solve_pitzer
+
+    pitzer = solve_pitzer(
+        total_alkalinity,
+        dic,
+        salinity,
+        temperature,
+        borate_option=constants.pyco2sys_total_borate,
+    )
+    frame = pd.DataFrame(
+        {
+            "total_alkalinity_umol_kg": pitzer.total_alkalinity,
+            "dic_umol_kg": pitzer.dic,
+            "ph_total": pitzer.ph_total,
+            "pco2_uatm": pitzer.pco2,
+            "carbonate_umol_kg": pitzer.carbonate,
+            "bicarbonate_umol_kg": pitzer.bicarbonate,
+            "omega_calcite": pitzer.omega_calcite,
+            "omega_aragonite": pitzer.omega_aragonite,
+            "omega_brucite": pitzer.omega_brucite,
+        },
+        index=index,
+    )
+    assert list(frame.columns) == list(CHEMISTRY_COLUMNS)
+    return frame
+
+
+def _pyco2sys_frame(  # type: ignore[no-untyped-def]
+    constants, total_alkalinity, dic, salinity, temperature, index, *, context: str
+) -> pd.DataFrame:
+    """`CHEMISTRY_COLUMNS` from PyCO2SYS, brucite by the Davies bound; the state rides in attrs."""
+    state = solve_from_alkalinity_dic(
+        total_alkalinity,
+        dic,
+        salinity,
+        temperature,
         constants=constants,
+        context=context,
     )
     brucite = state.omega_brucite(solubility_brucite(state.salinity, state.temperature))
     frame = pd.DataFrame(
@@ -260,9 +379,37 @@ def _chemistry(case: Case, trajectory) -> pd.DataFrame | None:  # type: ignore[n
             "omega_calcite": state.omega_calcite,
             "omega_aragonite": state.omega_aragonite,
             "omega_brucite": brucite,
-        }
+        },
+        index=index,
     )
     assert list(frame.columns) == list(CHEMISTRY_COLUMNS)
+    frame.attrs["state"] = state
+    return frame
+
+
+def _pitzer(state, constants, index) -> pd.DataFrame:  # type: ignore[no-untyped-def]
+    """`PITZER_COLUMNS` for a solved `CarbonateState`: the same (TA, DIC, S, T), the other engine.
+
+    The import is here, not at module top, so a run that never asks for the Pitzer column never
+    imports the optional package -- and one that asks without it gets `PitzerUnavailableError`.
+    """
+    from plumes2.chem.pitzer import solve_pitzer
+
+    pitzer = solve_pitzer(
+        state.total_alkalinity,
+        state.dic,
+        state.salinity,
+        state.temperature,
+        borate_option=constants.pyco2sys_total_borate,
+    )
+    frame = pd.DataFrame(
+        {
+            "omega_brucite_phreeqc": pitzer.omega_brucite,
+            "ph_total_phreeqc": pitzer.ph_total,
+        },
+        index=index,
+    )
+    assert list(frame.columns) == list(PITZER_COLUMNS)
     return frame
 
 
@@ -402,31 +549,16 @@ def _farfield_chemistry(case: Case, final, frame: pd.DataFrame) -> pd.DataFrame 
     temperature = mixed(float(final["temperature_degC"]), ambient.temperature)
 
     constants = resolve_constants(case.carbonate.k1k2_option, case.carbonate.kso4_option)
-    state = solve_from_alkalinity_dic(
+    return _carbonate_frame(
+        case,
+        constants,
         total_alkalinity,
         dic,
         salinity,
         temperature,
-        constants=constants,
+        index=frame.index,
         context="far-field plume",
     )
-    brucite = state.omega_brucite(solubility_brucite(state.salinity, state.temperature))
-    chemistry = pd.DataFrame(
-        {
-            "total_alkalinity_umol_kg": state.total_alkalinity,
-            "dic_umol_kg": state.dic,
-            "ph_total": state.ph_total,
-            "pco2_uatm": state.pco2,
-            "carbonate_umol_kg": state.carbonate,
-            "bicarbonate_umol_kg": state.bicarbonate,
-            "omega_calcite": state.omega_calcite,
-            "omega_aragonite": state.omega_aragonite,
-            "omega_brucite": brucite,
-        },
-        index=frame.index,
-    )
-    assert list(chemistry.columns) == list(CHEMISTRY_COLUMNS)
-    return chemistry
 
 
 def sample_at_distance(results: Results, distance_m: float) -> pd.Series:
@@ -506,6 +638,8 @@ def write_results(results: Results, directory: str | Path) -> Path:
         f"termination: {results.termination!r}",
         f"near_field_end_s: {results.end_time!r}",
         f"has_chemistry: {results.has_chemistry}",
+        f"has_pitzer: {results.has_pitzer}",
+        f"has_comparison: {results.has_comparison}",
         f"has_oxygen: {results.has_oxygen}",
         f"has_farfield: {results.farfield is not None}",
         "columns:",
@@ -514,6 +648,8 @@ def write_results(results: Results, directory: str | Path) -> Path:
             for name, meaning in {
                 **NEARFIELD_COLUMNS,
                 **(CHEMISTRY_COLUMNS if results.has_chemistry else {}),
+                **(PITZER_COLUMNS if results.has_pitzer else {}),
+                **(PHREEQC_COLUMNS if results.has_comparison else {}),
                 **(OXYGEN_COLUMNS if results.has_oxygen else {}),
                 **(FARFIELD_COLUMNS if results.farfield is not None else {}),
             }.items()

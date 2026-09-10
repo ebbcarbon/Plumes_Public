@@ -1,10 +1,11 @@
 """plumes2 -- a Python re-implementation of PLUMES2.0.
 
 An outfall plume model: a near-field UM3 Lagrangian control-volume solver, the Brooks (1960) far
-field, carbonate chemistry on PyCO2SYS, and dissolved oxygen. It exists because Ebb needs to predict
-pH in the plume of an **alkalinity-elevated discharge**, and the reference implementation -- a
-Windows executable from SSMC -- cannot report the quantity that matters most for one (see
-`plumes2.chem.saturation.omega_brucite`).
+field, carbonate chemistry on PyCO2SYS (or on PHREEQC / Pitzer, or both side by side --
+`carbonate.solver`), and dissolved oxygen. It exists because Ebb needs to predict pH in the plume
+of an **alkalinity-elevated discharge**, and the reference implementation -- a Windows executable
+from SSMC -- cannot report the quantity that matters most for one (see
+`plumes2.chem.saturation.omega_brucite`, and its Pitzer counterpart in `plumes2.chem.pitzer`).
 
 ## Thirty seconds
 
@@ -35,6 +36,7 @@ Or from a shell, without writing any Python:
 | `plumes2.nearfield` | the LCV solver: entrainment, merging, termination |
 | `plumes2.farfield` | Brooks, and the exe's standalone far-field calculator |
 | `plumes2.chem` | speciation, saturation states (including brucite), precipitation rates |
+| `plumes2.chem.pitzer` | the second brucite engine, PHREEQC / Pitzer -- optional, opt-in per case |
 | `plumes2.biochem` | dissolved oxygen and BOD |
 | `plumes2.results` | `run()` -- the thing most callers want |
 | `plumes2.report` | the reports, PDF or HTML |

@@ -12,27 +12,45 @@ Status: **Phases 0–8 complete; Phase 9, the dose study, has run.** The file I/
 byte-exactly, the near-field solver clears upstream's own 0.5 % acceptance bar, Brooks is
 confirmed against the exe's own independent calculator, the chemistry and dissolved-oxygen
 modules reproduce every archived trace, and the validation ledger is *executable* and
-**complete — 195 of 195 countable rows**: `plumes2 validate` re-derives every published
+**complete — 202 of 202 countable rows**: `plumes2 validate` re-derives every published
 number rather than restating a typed one.
 
 ⚠️ **Parity is not the goal, it is the floor.** What the port exists to do — predict the
 pH and mineral saturation of an alkalinity-elevated plume — is a question the executable
 cannot answer at all.
 
-**The study has run** (2026-08-26; rerun 2026-09-09 at the site's **5900 L/h** with intake water as the
+**The study has run** (2026-08-26; rerun 2026-09-09 and 2026-09-10 at the site's **5900 L/h** with intake water as the
 effluent, on both ambients — the 2 cm/s acute and the 5 cm/s chronic current — and with the site's
 ambient chemistry, **TA 2146 / DIC 2092 µmol/kg, uniform in depth**) at Ebb's default profile, the
-Macoma configuration. Headline: **below TA ≈ 3660 µmol/kg at the intake DIC (2092) the discharge
-never supersaturates brucite, even undiluted** — ≈ 3040 if it leaves at 30 °C; above it the
-centreline window is centimetres and seconds (≤ 42 cm, ≤ 7.5 s at TA 20 000), and the mixing-zone
-boundaries, in receiving water at pH 7.73, see at most +0.32 pH. Four named effluents at the same geometry show that the hydroxide per
-kilogram of effluent sets the window, not its pH. Every pH on the dose axis is parity-checked: the exe's
-own carbonate solver stays within **0.011–0.025 pH** of PyCO2SYS from pH 8.4 to 12.0
+Macoma configuration. Headline: **below TA ≈ 3630 µmol/kg at the intake DIC (2092) the discharge
+never supersaturates brucite, even undiluted** — ≈ 3010 if it leaves at 30 °C; above it the
+centreline window is centimetres and seconds (≤ 42 cm, ≤ 7.7 s at TA 20 000), and the mixing-zone
+boundaries, in receiving water at pH 7.73, see at most +0.32 pH. Four named effluents at the same
+geometry show that the hydroxide per kilogram of effluent sets the window, not its pH.
+
+Every pH on the dose axis is parity-checked: the exe's own carbonate solver stays within
+**0.011–0.025 pH** of PyCO2SYS from pH 8.4 to 12.0
 ([`case47`](reference_cases/case47_dose_parity/README.md)). The centreline is read through the exe's
 default **parabolic** profile — the exe offers three
 ([`case48`](reference_cases/case48_similarity_profiles/README.md)) and the port implements all of
-them plus the literature's Gaussian, selectable per case. `Ω_brucite` is an **upper bound** (no ion
-pairing); `Ω_brucite = 1` is a pH threshold, ≈ 9.43 total at S 32 / 10 °C.
+them plus the literature's Gaussian, selectable per case. The default `Ω_brucite` column is an
+**upper bound** (no ion pairing); `Ω_brucite = 1` is a pH threshold, ≈ 9.41 total at S 32 / 10 °C.
+
+⭐ **A second brucite engine** (2026-09-09) — PHREEQC with its Pitzer ion-interaction database, `carbonate.pitzer` or
+`carbonate.solver` — puts the same water **8–9× lower** in Ω, so the ceiling reads **≈ 4200** and the
+threshold **9.83–9.88**; the study reports the two as a band, and the physics document explains
+the terms ([PORTING_THE_PHYSICS.md](PORTING_THE_PHYSICS.md) §4, [the plan](notes/PHREEQC_PLAN.md)).
+
+**Most recent (2026-09-10).** The default brucite column now forms its product on the molal scale
+(it had mixed per-kg-of-solution concentrations with a molal `Ksp`, a 0.91 that pointed the other
+way from every other bias): every seawater Ω in that column rose 1.10×, its ceiling moved 3660 →
+3630, and the Pitzer column did not move. The near-field solver runs **3× faster** on a tolerance
+change scored against every ledger target (the largest move 0.074 % of a row's tolerance). Every
+ledger row that had sat open without a number is dispositioned — measured or retired with a
+reason — and a new row pins the unit contract end to end: the exe reads the unit selectors the
+port writes as the port meant them (case55, feet-flagged spacing and zones). Because the writer
+picks the unit that survives the `.prj`'s three significant figures best, a metric case can be
+stored in feet; `plumes2 info` and every experiment note now say which unit each table is stored in.
 
 See [`studies/ebb_dose_study/`](studies/ebb_dose_study/README.md) for the write-up, [PLAN.md](notes/PLAN.md)
 for where the project stands and what is next, and [SSMC_REPORT.md](notes/SSMC_REPORT.md) for the findings
@@ -61,6 +79,7 @@ Then `python docs/build.py` for the rendered API reference.
 | **Ebb** | [Ebb Carbon](https://ebbcarbon.com), whose alkalinity-elevated discharge is the reason this port exists. |
 | **Macoma** | Ebb's site, and the configuration the dose study runs at: 25 ports at 2 ft, 5900 L/h of intake water, 20.7 / 207 ft mixing zones, ambient TA 2146 / DIC 2092. The archived exe runs in `reference_cases/case00`–`case12` and `case24` were an *earlier entry* of that diffuser with known slips (2 m, 35 psu, 0.219 L/s, zones in metres) and are called "the archived diffuser", never Macoma; the site's own case, run in the exe on 2026-09-09, is `reference_cases/case55_macoma_site/`. |
 | **a ledger row** | one numbered finding in [`notes/LEDGER.md`](notes/LEDGER.md), re-derived by `plumes2 validate`; docs cite them as "row 262". |
+| **the two chemistry engines** | **PyCO2SYS**, the default and the exe's own lineage, and **PHREEQC** with its Pitzer ion-interaction database (the optional `pitzer` extra). They agree on pH and the carbonates to a few percent; on brucite they differ 8–9×, because the default column is an upper bound without ion pairing. `carbonate.solver` picks `none`, `pyco2sys`, `phreeqc` or `all` (both, for comparison). |
 
 ## What is upstream and what is new here
 
@@ -71,15 +90,18 @@ This distinction matters, so it is enforced by directory:
 | **[`upstream/`](upstream/)** | Verbatim snapshot of [ssmc-uw/PLUMES2.0](https://github.com/ssmc-uw/PLUMES2.0) — the Windows executable, both user manuals, the shipped example project, icons, and the upstream README/licence/disclaimer. | **No.** Treat as read-only reference. |
 | `src/plumes2/` | New. The Python port. | yes |
 | `tests/` | New. Validation suite. | yes |
-| `reference_cases/` | New. Exe-generated runs used as validation targets (case00–case54), each with a write-up of what it revealed. The `.dat`/`.csv`/`.prj` files inside are exe output — do not hand-edit them; the READMEs are ours. `pending/` holds generated experiments awaiting the exe. | READMEs yes, data no |
-| `references/` | Third-party sources the manuals cite but do not reproduce (the 1985, 1994 and 2003 EPA reports, and three non-EPA papers). ⚠️ Millero (2010) and Cenedese & Linden (2014) are **not** redistributable — see its README before publishing this repo. | README yes, PDFs no |
+| `reference_cases/` | New. Exe-generated runs used as validation targets (case00–case55), each with a write-up of what it revealed. The `.dat`/`.csv`/`.prj` files inside are exe output — do not hand-edit them; the READMEs are ours. `pending/` holds generated experiments awaiting the exe. | READMEs yes, data no |
+| `references/` | Third-party sources the manuals cite but do not reproduce (the 1985, 1994 and 2003 EPA reports, and three non-EPA papers). ⚠️ Millero (2010) and Cenedese & Linden (2014) are **not** redistributable — the public snapshot omits them; see its README. | README yes, PDFs no |
 | `studies/` | New. The dose study and its dry run, with write-ups; the scripts that generate exe experiments; `example_case.yaml`, the shipped example in the port's native format. | yes |
 | [`examples/`](examples/README.md) | New. plumes2 as a called physics package: plain-CSV ambient tables, a runnable script, its expected output. Executed by the test suite. | yes |
 | `USER_GUIDE.md` | New. Every command, field, default and column spelled out, pinned to the code by `tests/test_user_guide.py`. | yes |
 | `PORTING_THE_PHYSICS.md` | New. The write-up for people *using* the model: accuracy, where the exe contradicts its own manual, and the defect flags. | yes |
 | `reports/` | Local only: where `plumes2 report` writes its PDFs. The whole folder is ignored by git, so a clone has no `reports/` directory; a report goes into the repository only by a deliberate `git add -f`. | no |
-| [`notes/`](notes/) | New. The development record: `PLAN.md` (current state and next actions), `PLAN_HISTORY.md` (the frozen build log — search it, do not read it), `LEDGER.md` (the validation ledger, every finding one row), `PORTING_NOTES.md` (the decoded specification), `MANUAL_DIGEST.md` (the upstream manuals condensed), `SSMC_REPORT.md` (findings for the maintainers, awaiting the operator's review), `ENVIRONMENT.md` (toolchain). | yes (`PLAN_HISTORY.md` frozen) |
+| [`notes/`](notes/) | New. The development record: `PLAN.md` (current state and next actions), `PLAN_HISTORY.md` (the frozen build log — search it, do not read it), `LEDGER.md` (the validation ledger, every finding one row), `PORTING_NOTES.md` (the decoded specification), `MANUAL_DIGEST.md` (the upstream manuals condensed), `PHREEQC_PLAN.md` (the second chemistry engine: plan, spike, results), `SSMC_REPORT.md` (findings for the maintainers, awaiting the operator's review), `ENVIRONMENT.md` (toolchain). | yes (`PLAN_HISTORY.md` frozen) |
 | `docs/` | New. `build.py` renders the API reference from the in-place docstrings; the output is git-ignored. | yes |
+| `tools/` | New. `export_public.py` writes the public snapshot: the tracked tree minus `.publicignore`. Internal repository only. | yes |
+| `private/` | Internal repository only, never exported: site data under evaluation, drafts, anything commercially sensitive. | yes |
+| `EBB_README.md` | Internal addendum for readers at Ebb — which commit of the blending tool the PHREEQC engine was cloned from, where the site values came from, how the snapshot is cut. Internal repository only. | yes |
 
 Nothing in `upstream/` is modified — it is there so the port can be checked
 against the real thing, and so the provenance of every reference number is
@@ -99,12 +121,14 @@ not endorsed by EPA, PNNL, Battelle, or the UW Salish Sea Modeling Center.
 [MIT-licensed](LICENSE), © 2026 Ebb Carbon.** `upstream/license.md` covers only the upstream
 snapshot; the two regimes coexist and neither restricts the other.
 
-⚠️ **Do not redistribute this repository.** Two PDFs under [`references/`](references/README.md)
-— Millero (2010) and Cenedese & Linden (2014) — are copyrighted works we may hold for
-private research but **not** republish, and they are tracked in git history, not just the
-working tree. Private collaborator access is fine; any public release must first remove them
-(a history rewrite or a history-free snapshot export, not a `git rm`) — see
-`references/README.md`.
+⚠️ **Do not redistribute the internal repository as such.** Two PDFs under
+[`references/`](references/README.md) — Millero (2010) and Cenedese & Linden (2014) — are
+copyrighted works we may hold for private research but **not** republish, and in the internal
+repository they are tracked in git history, not just the working tree. Private collaborator access
+to that repository is fine. **The public copy, [`ebbcarbon/Plumes_Public`](https://github.com/ebbcarbon/Plumes_Public),
+is a history-free snapshot** refreshed by hand: the tracked tree minus those two PDFs and a few
+internal documents (the plan, the build log, the maintainer report, the dose study). If you are
+reading this there, that is why `references/README.md` lists two files you do not have.
 
 ## Getting started
 
@@ -113,7 +137,7 @@ With [uv](https://docs.astral.sh/uv/getting-started/installation/) installed
 
 ```powershell
 uv venv --python 3.14 .venv
-uv pip install --python .venv -e ".[compare,dev,notebook]"
+uv pip install --python .venv -e ".[compare,dev,notebook,pitzer]"   # pitzer: the optional PHREEQC engine
 .venv\Scripts\python.exe -m pytest -n auto --dist loadfile
 ```
 
@@ -131,7 +155,7 @@ wrote out\example
   near field ended after 102.0 s (oscillation limit)
   dilution 228.9 at 3.09 m depth
   centreline dilution 126.5 (peak/mean 1.810, merged)
-  plume diameter 8.422 m
+  plume diameter 8.423 m
 ```
 
 Or as a library — the whole API in four lines:
@@ -148,13 +172,13 @@ CSVs, an alkalinity-elevated discharge, mixing-zone chemistry — with its expec
 
 ### Running the suite
 
-Over 2 500 tests, and deliberately not pinned here — a hand-maintained count is the one thing
+Over 3 000 tests, and deliberately not pinned here — a hand-maintained count is the one thing
 this project has watched go stale most often. Most are cheap — half of them round-trip every archived `.prj`, `.dat` and CSV one
 file at a time, which is what catches a formatting change the day it lands.
 
 | | command | time |
 |---|---|---|
-| **everything, parallel** | `pytest -n auto --dist loadfile` | ~150 s (2 794 tests, 2026-08-26) |
+| **everything, parallel** | `pytest -n auto --dist loadfile` | ~4 min from a cold outcome cache; well under that once it is warm |
 | **everything, serial** | `pytest` | slower, but the only run that checks the `slow` marker |
 | **the fast lane** | `pytest -m "not slow"` | skips the tests over a second |
 | **the ledger only** | `plumes2 validate` | every validated claim, re-derived |

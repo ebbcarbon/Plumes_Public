@@ -1,16 +1,22 @@
 # Validation ledger
 
 Every numbered finding about the exe, what it was measured against, and whether a target in
-`plumes2.validation` runs it. **320 rows**, of which **all 195 countable ones** are
+`plumes2.validation` runs it. **324 rows**, of which **all 202 countable ones** are
 executable — the ledger has been complete since 2026-08-25, when row 258c closed and row 278
 was added; rows 280/280b (2026-08-26, the far-field law selector), 281–283 (2026-09-01,
 the flag-decode suite, case51/case52) and 284–285 (2026-09-02, the shoreline pair and the
-sinking sub-critical arm, case53/case54) arrived executable.
+sinking sub-critical arm, case53/case54) arrived executable, as did 287–289 (2026-09-09, the
+Pitzer brucite engine — `plumes2[pitzer]` is needed to run those three). On 2026-09-10 the
+ten rows that had sat ⏳ without a number were triaged (operator): 48 and 95 were given numbers and
+targets, 6, 8, 12, 92, 93 and 195 were retagged ⊘ with their reasons, 208 was given a number and a
+target and 209 retagged `documentary`; row 290 (the exe reads the port's unit selectors as written,
+case55) was added executable the same day.
 
 ⚠️ **Complete is not finished.** Three rows still record open *problems* rather than open
 measurements: **157b/186** (merging is 1–7 % wrong post-merge past `d/L` 3, the port's largest
-known residual), **195** (`Ω_brucite` has no parity target by construction — the exe cannot
-report it), and **187** (whether the `.prj` carries a build stamp; no input exists). Executable
+known residual), **195** (`Ω_brucite` has no parity target by construction — the exe does not
+calculate brucite at all; ⊘ `no input` since 2026-09-10), and **187** (whether the `.prj` carries a
+build stamp; no input exists). Executable
 means every countable claim re-derives on demand, not that nothing is left to learn.
 
 **This file is the denominator.** `test_the_ledger_denominator_matches_the_ledger` recomputes the
@@ -51,19 +57,24 @@ every marked row carries one of the four, and the derived denominator drops them
 
 ## Unfiled
 
-### ⏳ Open (3)
+### ⏳ Open (0)
 
-Recorded and not yet executable — either the measurement is still to be written or the data to settle it does not exist.
+None. Rows 6, 8 and 12 were retired before the ⊘ tags existed and sat here struck through; they
+moved below on 2026-09-10 (operator) with the reason each carries.
+
+### ⊘ Not executable (3)
+
+Retired with a reason, and each says which: `subsumed` (names the covering row), `documentary`, `downgraded`, or `no input`.
 
 | # | Target | Value | Source | Phase |
 |---|---|---|---|---|
-| 6 | ~~Wastefield width 109.59 m, and the far-field table and chronic-MZ dilution that follow from it~~ | ❌ **retired** — old-build values; the current exe gives 96.29 / 97.60 for the same inputs (rows 96, 103), so the 21-row far-field table and 178.408 @ 104.435 m go with it | old build | — |
-| 8 | ~~Far-field dilution at chronic MZ~~ | ❌ **retired** — 178.408 @ 104.435 m is old-build | old build | — |
-| 12 | ~~Appendix A's near-field and far-field pairs, 41 of them~~ | ❌ **retired as targets, kept as the bar** — Appendix A tabulates PLUMES2.0 against UM3 with **no input conditions**, so the numbers cannot be reproduced. What it does supply is the acceptance bar this project is held to: 0.26-0.41 % MARE near field, 0.03-0.62 % per case far field | Manual App. A | — |
+| 6 | ~~Wastefield width 109.59 m, and the far-field table and chronic-MZ dilution that follow from it~~ | ⊘ **Not executable** (`downgraded`) — a retraction: old-build values. The current exe gives 96.29 / 97.60 m for the same inputs (rows 96, 103), so the shipped example's 21-row far-field table and its 178.408 @ 104.435 m go with it; agreement would prove nothing. Retagged from ⏳ 2026-09-10 | old build | — |
+| 8 | ~~Far-field dilution at chronic MZ~~ | ⊘ **Not executable** (`subsumed`) — by row 6, whose old-build far-field table this 178.408 @ 104.435 m is one line of. Retagged from ⏳ 2026-09-10 | old build | — |
+| 12 | ~~Appendix A's near-field and far-field pairs, 41 of them~~ | ⊘ **Not executable** (`no input`) — Appendix A's input conditions were never published: the manual tabulates PLUMES2.0 against UM3 with no inputs, so none of the 41 pairs can be reproduced. **Kept as the bar** this project is held to — 0.26–0.41 % MARE near field, 0.03–0.62 % per case far field (the 0.5 % acceptance bar rows 171a-e cite). Reopens if the maintainers publish the inputs. Retagged from ⏳ 2026-09-10 | Manual App. A | — |
 
 ## Phase 1 — legacy I/O
 
-### ✅ Measured (21)
+### ✅ Measured (24)
 
 A target in `plumes2.validation` runs these on every build.
 
@@ -72,6 +83,7 @@ A target in `plumes2.validation` runs these on every build.
 | 1 | `.prj` + 6 CSV round-trip | byte-identical | `upstream/Example_project/` | 1 |
 | 16 | case01 `.prj` + CSV round-trip | byte-identical | case01 | 1 |
 | 28 | Unit flag changes physics (same 0.005, 23× flow) | case01 vs case02 diverge | case01 + case02 | 1, 5 |
+| 48 | ✅ The `.dat` reader tolerates both header styles | **2 of 2** header styles parse onto one canonical column set: the Dec-2025 build's `Avg-Dil` / bare units / `P-Temp` (case00's legacy trace) and the 2026 builds' `Dilutn` (case13's) both map to `dilution`, `plume_diameter_m`, `x_m`, `y_m` — the columns every build prints whatever the output selection — through `plotframe._EXE_COLUMNS`; the legacy trace also round-trips byte-exact under row 18. ✅ Given its number and a target 2026-09-10 (operator) | case00, case13 | 1 |
 | 49 | `.prj` unit flags include feet (0.3048 rescale) | spacing + both MZ distances | case00 | 1 |
 | 72 | Shoreline vector has no effect | case08 ≡ case05 near-field, and 45° ≡ 45°+5 m | case08 | 1, 5 |
 | 74 | NaN traces parse rather than crash the reader | 955 NaN rows, NaN far-field | case09 | 1 |
@@ -79,6 +91,7 @@ A target in `plumes2.validation` runs these on every build.
 | 86 | ⚠️ Unit flag map: 1 = the GUI's **default**, 2 = the alternate — **not SI first** | lengths: 1 = m, 2 = ft (×0.3048). **Flow: 1 = MGD, 2 = m³/s.** So flag 1 is SI for a length and *not* for a flow — reading it as "already SI" leaves every length right and the flow 22.8x wrong (row 28). ⚠️ This row said "1 = primary" until 2026-08-18; making it executable is what forced the distinction | case00 + case01/02 | 1 |
 | 87 | ⚠️ Flag-to-column alignment: **three tables carry a leading selector and three do not** | offset by one: effluent, mixing zone, ambient. 1:1: diffuser, **and the ambient DO and chemistry tables, which carry no selector row at all**. ⚠️ This row said "diffuser 1:1; others offset by one" until 2026-08-18, which is wrong for those last two. An offset error reads a neighbouring column's unit, so it rescales silently rather than failing | case00 | 1 |
 | 88 | Header-only `.dat` parses with an empty step table | echoes still usable | case00 | 1 |
+| 95 | ✅ The exe **runs** a project we generated | near field **bit-identical** to the shipped trace: **0 differing cells** over 55 rows × 5 shared columns (`Depth`, `Dilutn`, `P-dia`, `x-posn`, `y-posn`), the banners on the same steps (`Plume traps` 255, `merging happened` 260, `Plume surfaces` 275). The far field differs by row 6's old-build width. ✅ Phase 1's acceptance criterion, re-derived on every build since 2026-09-10 (operator) | case13 (`PythonGenerated2.dat`) vs `upstream/Example_project` | 1 |
 | 113 | ✅ **Froude design check `U/√(gD\|s−1\|) > 1`**, implemented as a warning | manual §5.2.2: below 1 the port is not jetting and the near-field model is out of regime. `Case.densimetric_froude_number()`; warns via `DesignWarning`, never refuses, because the exe runs these. ⚠️ Uses **\|g'\|** — the manual's `s−1` is negative for the half of this archive that sinks. ⚠️ Nothing archived exercises it: the minimum is **case22 at 2.01**, and it is *not* what would have caught case09, which is supercritical at F ≈ 1045 | Manual §5.2.2 | 1 |
 | 121 | `.dat` diffuser echo: `( )` unit must not shift columns | H-angle 70 parses as 70 | test20 | 1 |
 | 141 | ⚠️ `.dat` **diffuser echo rounds to 2 dp** | `P-dia` "0.01" is 0.0127; `Ttl-flo` "0.01" is 0.005 | case18 | 1, 5 |
@@ -90,17 +103,21 @@ A target in `plumes2.validation` runs these on every build.
 | 282 | ⚠️⚠️ **Near-field flag 3 = 1 makes the exe fail silently and truncate the project file** | the `nf3` arm ran with **no error dialog** (operator, 2026-09-01), produced **no `.dat`**, and the `.prj` on disk was cut mid-rewrite at the near-field plot-flags block — everything below is gone, while the flipped flag itself survives in the intact head. Re-loading the truncated file later **crashed the exe** (operator, same day): a second defect, no guard on a short project file. The truncated file is archived as the evidence (`.prj.evidence`, deliberately not `.prj`). ⭐ **Mechanism identified the same evening by the recon checklist: position 3 is the stop-at-shoreline box** — so the failure is the shoreline *stop* enabled against the project's zero shoreline vector; the shoreline *vector* alone was already proven inert (rows 72, case08/12) | case51 | 1 |
 | 283 | ⭐⭐ **Near-field flag 1 is the stop-at-bottom box (1 = stop)** | case52: one dense −45° geometry with the seabed 0.3 m below the port, one flag moved. Both arms print `Plume hits the bottom` at **step 231** with every prior row bit-identical; the base (flag 1) stops on the truncated terminating row there, the flipped arm (flag 0) **continues 14 printed rows past contact** through `Plume traps` — case46's surface pattern exactly, and case06's "a hit is a termination switch, not physics". Double-evidenced: the recon checklist shows the flipped project loading with **"bottom hit" unchecked**. ⭐ The pre-registered forecast hit: predicted contact ~21 s / dilution 93; the exe printed 21.409 s / 97.200 | case52 | 1 |
 | 284b | ⭐⭐ **The `.prj` shoreline vector is `[distance m, bearing deg]`** | the archive's first two saved projects with a non-zero shoreline vector (case53's pair, both **as-run** — the order is the exe's own, written back at run time) each store a typed "60°, 5 m" as records **5.0 then 60.0**: distance first. Retires PORTING_NOTES' "the coordinate convention remains unknown", which had stood since case08 because no project carrying a vector had ever been saved | case53 | 1 |
+| 290 | ✅ **The exe reads the unit selectors the port writes as the port meant them** | case55, both arms: the port wrote spacing and both mixing-zone distances **in feet** (selector 2 — 2.00 ft is exact in three significant figures where 0.610 m is not, `project._best_selector`); the exe's as-run `.prj` came back byte-identical, its `.dat` labels those three echoed columns `(ft)`, and its wastefield banner is `(n−1) × 0.6096 m + D_end` to the printed 0.01 m (15.53 / 15.28 m). **0 mismatches over 14 checks.** The end-to-end unit contract in one number; `written_units` (`plumes2 info`, every experiment note) states what a `.prj` is stored in so the GUI cannot surprise the operator as the Dec-2025 feet slip did (row 49). Added 2026-09-10 (operator) | case55 | 1 |
 
-### ⏳ Open (4)
+### ⏳ Open (0)
 
-Recorded and not yet executable — either the measurement is still to be written or the data to settle it does not exist.
+None since 2026-09-10: rows 48 and 95 were given numbers and targets (above), rows 92 and 93 are
+retired below with their reasons (operator).
+
+### ⊘ Not executable (2)
+
+Retired with a reason, and each says which: `subsumed` (names the covering row), `documentary`, `downgraded`, or `no input`.
 
 | # | Target | Value | Source | Phase |
 |---|---|---|---|---|
-| 48 | `.dat` reader tolerates both header styles | `Avg-Dil` / bare units / `P-Temp` | case00 | 1 |
-| 92 | The exe **loads a `.prj` we generated** | opens without error | case13 (`PythonGenerated.prj`, written from the case with no template; the former `generated/` folder was folded into case13/14 on 2026-08-26) | 1 |
-| 93 | Ambient chemistry must extend deeper than the port | exe refuses otherwise | exe message | 1, 4 |
-| 95 | The exe **runs** a project we generated | near-field bit-identical to the shipped trace | case13 | 1 |
+| 92 | The exe **loads a `.prj` we generated** | ⊘ **Not executable** (`subsumed`) — by row 95: the exe cannot run a project it did not load, and row 95's zero-difference comparison is the measurement. It opened without error on 2026-08-12 (case13's `PythonGenerated.prj`, written from the case with no template; the former `generated/` folder was folded into case13/14 on 2026-08-26), and every generated experiment since (case47–case55) repeats it. Retagged from ⏳ 2026-09-10 | case13 | 1 |
+| 93 | Ambient chemistry must extend deeper than the port | ⊘ **Not executable** (`documentary`) — an exe dialog, not a quantity: *"Please input the ambient chemistry conditions at a depth greater than port depth"*, seen 2026-08-12 when case13's 11 m port met a 4 m chemistry table. The port raises the same refusal in `Case` validation (`config.py`), pinned by a unit test rather than a ledger target — a target here would count our code agreeing with our code. Retagged from ⏳ 2026-09-10 | exe message | 1, 4 |
 
 ## Phase 2 — seawater
 
@@ -459,7 +476,7 @@ Retired with a reason, and each says which: `subsumed` (names the covering row),
 
 ## Phase 6 — output
 
-### ✅ Measured (21)
+### ✅ Measured (22)
 
 A target in `plumes2.validation` runs these on every build.
 
@@ -477,6 +494,7 @@ A target in `plumes2.validation` runs these on every build.
 | 204b | ✅ **Obliquity lifts the printed ratio above 2.0** (default-profile traces, scoped 2026-08-26) | **2.1756** at the archive's most oblique geometry, against row 204's flat 2.0000 ceiling square to the flow — the control that makes the ceiling mean something, since a bound proves nothing unless something exceeds it. ⚠️ The excess tracks `d/L` **at the banner** rather than the angle alone: 65° → 2.007, 70° → 2.016, 45° → 2.045, 175° → 2.176, and 65 sits *below* 70 because the two runs differ in spacing (0.75 m against 2.0 m) | case16 + case21 + case40 | 6 |
 | 206 | ⚠️ **The exe ramps into the merged profile over 1–40 steps** | the banner's own row still prints 2.0000; the ratio then climbs monotonically to the line and never leaves it. ⚠️ **Scoped to output interval 1** — at interval 5 the banner row is up to five steps late and shows an already-merged 2.0400 (case15's test15, case16's test17/18), so a transient a few steps long is not resolvable there. Rate is not constant per step, per diameter or per unit dilution: at 175° it lengthens with spacing (7/15/40 steps at 1.0/1.5/2.0 m), at 0.75 m with obliquity. **Not reproduced**, deliberately | case16 + case21 + case40/41 | 6 |
 | 207 | ⚠️ **The exe's linear blend is not the parabola's own integral** | both endpoints exact from geometry with nothing fitted — 2.0000 round, 1.5000 slab — and the path between them a **linear shortcut**: 1.8500 against 1.8220 at `d/L` 1.3, 1.7000 against 1.7088 at 1.6, **1.5000 against 1.6309** at 2.0. So rows 203/221 agree with a shortcut rather than with the geometry, which is why reproducing the exe means implementing the blend and not the integral | — | 6 |
+| 208 | ✅ Display units convert **out** only, and refuse to guess | `display.py`: SI and US presets, the unit renamed into every column, an undeclared column fatal, a converted frame not re-convertible — and **every switchable display unit is the exact inverse of `units.py`'s input unit: max closure error 0 (tolerance 1e-12) over m/ft, m/s / ft/s, °C/°F and m³/s / MGD**, five probe values each, so a number the report prints in US units is the number the `.prj` reader would take back in. `internal`: our output side against our input side; the exe has no display layer. ✅ Given its number and a target 2026-09-10 (operator) | — | 6 |
 | 210 | ✅ Every archived trace adapts to the neutral plot frame | **74** traces, 9 distinct column sets, both dilution spellings (`Dilutn` / legacy `Avg-Dil`); merge flag from the exe's **banner** and spacing from the **echoed diffuser table**, so no `.prj` is needed for a centreline | all traces | 6 |
 | 211 | ✅ **Deriving plume S and T from a `.dat` costs no detectable chemistry error** | re-solving the exe's own TA/DIC on S and T mixed from the case reproduces its printed `pH` to **0.0236 max / 0.0120 mean** (case03, 41 rows) and **0.0272 / 0.0129** (case13, 55 rows), `Ω_arag` 3.2 % on both. ⭐ This is what makes row 201 trustworthy: a wrong reconstruction would make every secondary wrong with it, silently. ⚠️ The residual is the **pre-existing** exe-vs-PyCO2SYS offset (rows 41–46). ⚠️ Sign not uniform — case03 one-signed over 41 rows, case13 crosses over late (49 +, 6 −) | case03 + case13 | 6 |
 | 212 | ✅ ⚠️⚠️ **The palette is validated — and one of its published figures was wrong** | five checks now computed in `report/palette.py` rather than quoted in its docstring. Protan separation is **9.485** (OkLab ΔE×100, Viénot in linear light) against a **published 9.1 that no standard method reproduces** — Machado sev-1.0 gives 10.32, either in gamma-encoded sRGB gives 10.6. The claim survives, since 9.485 clears the floor of 8 more comfortably than 9.1 did, so this is a **correction**; the fix was to compute it, not to tune a matrix until it matched a comment. ⭐ The palette's whole case is that it was *validated rather than chosen*, and it rested on five numbers nothing recomputed | — | 6 |
@@ -487,25 +505,15 @@ A target in `plumes2.validation` runs these on every build.
 | 278 | ⭐⭐⭐ **The exe has three similarity profiles, and the selector really picks one** | `Default Profile` / `3/2 Power law Profile` / `Gaussian Profile`, enumerated 2026-08-25 and each measured on one geometry: developed peak-to-mean **2.00000**, **3.88997**, **3.66998**, every one flat to five figures over 252 rows. ⭐ The 3/2 option reproduces **35/9 = 3.8889** — the exact reciprocal of the area-average of `[1 − u^1.5]²`, the profile the 3rd edition derives its own 3.89 from — to **0.03 %**, so the exe ships the manual's profile as a non-default option and *defaults away from it*. That residual is 35× the printed precision and so is real, most likely the exe's own quadrature. ⚠️⚠️ The Gaussian is **not** PLAN 6b's `exp(−2u²)` candidate (2.313): 3.670 implies `exp(−3.57 u²)`, far more peaked. Adopting *the exe's* Gaussian and *the literature's* Gaussian are therefore different decisions, which PLAN 8.4 had been treating as one. ✅ **2026-08-26: the port carries all three plus the literature's** (`crossplume.SimilarityProfile`, selectable as `near_field.similarity_profile`, default `parabolic`), each unmerged plateau reproduced by its closed form; the merged blend for the non-default options was an assumption until case49 measured it the same afternoon — row 279 | case48 | 6 |
 | 279 | ⭐⭐ **The exe walks its non-default profiles from round to slab by the same linear law as the parabola** | case49: case44's 0.60 m project (test79) rerun under `3/2 Power law` and `Gaussian`. Trajectory **bit-identical** to test79 on all 453 rows; round plateaus **3.88999 / 3.67001** (case48's 3.88997 / 3.66998 reproduced on a second geometry); slab plateaus **2.22200 / 2.14660** against the profiles' own integrals 2.22222 / 2.14715 (−0.01 % / −0.03 %, the same order as row 278's quadrature residual), flat to five figures over 132 rows each; between `d = L` and `d = 2L` the ratio follows `max(slab, round + (round − slab)(1 − d/L))` to **0.0021 / 0.0017** at the worst of 106 walk rows, the law applying from the row after the banner exactly as the parabola's does (row 203). The assumption `crossplume.peak_to_mean` carried for these profiles is now a measurement | case49 | 6 |
 
-### ⏳ Open (2) — ✅ **phase 6's countable rows are complete**
+### ⏳ Open (0) — ✅ **phase 6 is complete**
 
-**21 of 21** countable rows are executable. ⭐ Row 278 joined on 2026-08-25 — case48 found the exe has *three* similarity profiles, which rescoped row 198.
+**22 of 22** countable rows are executable. ⭐ Row 278 joined on 2026-08-25 — case48 found the exe has *three* similarity profiles, which rescoped row 198. Rows 208 and 209 sat here without a number until 2026-09-10 (operator): 208 was given one and a target (above), 209 is retired below as `documentary`.
 
-⚠️ The two rows below carry **no number**, so they are outside the denominator either way — and
-they are left Open rather than tagged ⊘ deliberately. ⊘ means *no measurement of ours can add to
-this*, and that is not true here: `display.py` and `comparison.py` both have tests, so a target
-could be written. What is missing is a quantity worth publishing, not the possibility of one.
-
-⚠️ **Five of the nineteen are `internal`** — rows 201, 212, 212b, 212c and 213 are claims about
+⚠️ **Six of the measured rows are `internal`** — rows 201, 208, 212, 212b, 212c and 213 are claims about
 *our* code, not about the exe, and the exe has no counterpart to check them against. They are
 labelled `internal` on the page rather than passed off as parity.
 
-| # | Target | Value | Source | Phase |
-|---|---|---|---|---|
-| 208 | ✅ Display units convert **out** only, and refuse to guess | `display.py`: SI and US presets, the unit renamed into every column, an undeclared column fatal, and a converted frame not re-convertible. degF is the exact algebraic inverse of `units.py`'s input pair, tested both ways | — | 6 |
-| 209 | ✅ A comparison's legend is **derived**, not typed | `comparison.py` diffs the *resolved* cases, keeps profile tables whole, states a truncated label as `(+n more)`, labels identical runs `identical`, and concatenates long rather than onto a shared time grid | — | 6 |
-
-### ⊘ Not executable (8)
+### ⊘ Not executable (9)
 
 Retired with a reason, and each says which: `subsumed` (names the covering row), `documentary`, `downgraded`, or `no input`.
 
@@ -518,6 +526,7 @@ Retired with a reason, and each says which: `subsumed` (names the covering row),
 | 57 | case05 `.dat` output (merged, no advisory) | ⊘ **Not executable** (`subsumed`) — by row 18. byte-identical | case05 — ✅ **folded into row 18** | 6 |
 | 66 | case06 `.dat` output | ⊘ **Not executable** (`subsumed`) — by row 18. byte-identical | case06 — ✅ **folded into row 18** | 6 |
 | 202 | ~~⚠️ Post-merge overshoot to 2.09–2.13 is unexplained~~ **retired by row 203** | ⊘ **Not executable** (`subsumed`) — by row 203, which is the law that explains the numbers this row calls unexplained. it is not an overshoot: the law itself reads above 2.0 whenever `d < L`, and `d < L` at the banner is exactly what an oblique diffuser produces | case21 | 6 |
+| 209 | A comparison's legend is **derived**, not typed | ⊘ **Not executable** (`documentary`) — a design statement about `comparison.py`, not a measurement: it diffs the *resolved* cases, keeps profile tables whole, states a truncated label as `(+n more)`, labels identical runs `identical`, and concatenates long rather than onto a shared time grid. Every branch has a test (`tests/test_comparison.py`); none yields a number worth publishing. Retagged from ⏳ 2026-09-10 (operator) | — | 6 |
 | 254 | ⚠️ **The exe prints `Infinity` as well as `NaN`, and they are different data** | ⊘ **Not executable** (`subsumed`) — by row 18, which is the test this defect broke and the test that now holds it fixed; a separate target would run the same round trip twice. found in case29, where one column overflows to `Infinity` while its neighbours go `NaN` on the same row. Our writer collapsed both to `NaN`, which broke the byte-exact round trip on all three traces — the first `.dat` in the archive it had ever failed. Fixed; row 18 is back to 1.000 over all 135 traces | case29 | 6 |
 
 ## Phase 7 — validation
@@ -540,20 +549,27 @@ Retired with a reason, and each says which: `subsumed` (names the covering row),
 
 ## Phase 8 — beyond parity
 
-### ✅ Measured (2)
+### ✅ Measured (5)
 
 A target in `plumes2.validation` runs these on every build.
 
 | # | Target | Value | Source | Phase |
 |---|---|---|---|---|
-| 196 | ✅ `Ω_brucite` by thermodynamic `Ksp` ÷ explicit activity model | `I` = 0.723, `γ(Mg²⁺)` = 0.330, `γ(OH⁻)` = 0.758 at S 35 / 10 °C, all in literature range. ⚠️ **Re-based 2026-08-24**: the uncited `log Ksp` −11.16 became **Xiong (2008)'s measured −10.95 ± 0.2** (operator decision, PLAN 8.1), and every Ω fell 1.62×: **Ω = 131.4 dosed** (was 214), ~0.006 ambient (was 0.010), against aragonite's 23.5. Still an upper bound — ion pairing unmodelled | §8b + Xiong (2008) | 8 |
+| 196 | ✅ `Ω_brucite` by thermodynamic `Ksp` ÷ explicit activity model | `I` = 0.723, `γ(Mg²⁺)` = 0.330, `γ(OH⁻)` = 0.758 at S 35 / 10 °C, all in literature range. ⚠️ **Re-based 2026-08-24**: the uncited `log Ksp` −11.16 became **Xiong (2008)'s measured −10.95 ± 0.2** (operator decision, PLAN 8.1), and every Ω fell 1.62×: Ω = 131.4 dosed (was 214), ~0.006 ambient (was 0.010), against aragonite's 23.5. ⚠️ **Re-based 2026-09-10**: the product is formed on the **molal** scale (per-kg-of-solution `[Mg²⁺]` and `[OH⁻]` each ÷ the water fraction before meeting the molal `Ksp`; operator), so every seawater Ω rose `1/w³` = 1.11 at S 35: **Ω = 146.3 dosed**, ~0.007 ambient; the Ω = 1 threshold fell 0.02 pH. Still an upper bound — ion pairing unmodelled | §8b + Xiong (2008) | 8 |
 | 197 | ⚠️ Brucite dissolution is **athermal**; a 48× enthalpy error was caught | −2.29 kJ/mol from formation enthalpies, not the −111.3 first used, which would have been a **10× error** in `Ksp*` with no downstream symptom. Pinned by a regression test | §8b | 8 |
+| 287 | ✅ **The second brucite engine** (PHREEQC / `pitzer.dat`, `chem/pitzer`, opt-in `carbonate.pitzer`) reproduces pure water's ion product | pKw **13.995** at 25 °C and 14.531 at 10 °C against Harned & Owen's 13.995 / 14.535 — the model-independent check before any seawater is involved | PHREEQC_PLAN.md §8; Harned & Owen | 8 |
+| 288 | ✅ PHREEQC and PyCO2SYS **agree on pH to 0.03** (total scale) on the dosed site water | TA 2146 → 20 000 at DIC 2092, S 30.9 / 11.2 °C: gap 0.000–0.029, sign varying, with Uppstrom boron entered in both. ⚠️ Boron left out of the PHREEQC input reads 0.13–0.31 high at pH 7.7–10 (the spike's first pass). The plan predicted PHREEQC *lower* by 0.03–0.10 — a miss | PHREEQC_PLAN.md §8, row C | 8 |
+| 289 | ⭐⭐ `Ω_brucite` (Davies, totals) sits **8.7× above** the Pitzer value at TA 20 000, 8.3× at the ambient — nearly flat | Decomposed: `[OH⁻]²` 3.1× (PyCO2SYS's hydroxide is a *total*, ~45 % of it MgOH⁺ at pH 11–12), `γ(OH⁻)²` 1.9× (0.54 vs 0.75), `γ(Mg²⁺)` 1.2×, Mg pairing 1.0–1.2×. ⚠️ **Re-pinned 7.9 → 8.7 on 2026-09-10**: until then the Davies column formed its product per kg of solution against a molal `Ksp`, a × 0.91 the decomposition had to carry; `omega_brucite` now works on the molal scale (operator) and the four terms are the whole ratio. Threshold pH 9.41 → ≈ 9.87. Predicted 1.5–3× — a miss by ~3×, on the hydroxide side not the magnesium side. ⚠️ The MgOH⁺ share is `pitzer.dat`'s constant (log_k −11.809; `phreeqc.dat` −11.44). Both columns kept permanently (operator) | PHREEQC_PLAN.md §8, row D; PORTING_THE_PHYSICS §4 | 8 |
 
-### ⏳ Open (1)
+### ⏳ Open (0)
 
-Recorded and not yet executable — either the measurement is still to be written or the data to settle it does not exist.
+None since 2026-09-10: row 195 is retired below, with the reason.
+
+### ⊘ Not executable (1)
+
+Retired with a reason, and each says which: `subsumed` (names the covering row), `documentary`, `downgraded`, or `no input`.
 
 | # | Target | Value | Source | Phase |
 |---|---|---|---|---|
-| 195 | ⏳ **`Ω_brucite` has no parity target** | the exe reports `OmegaA`/`OmegaC` only, so this is the first quantity with **no exe reference to check against** — validation must come from analytical limits, internal consistency and the literature (§8b). ⭐ **The first analytical limit is in (PLAN §8f)**: brucite saturation (Ω of unity) is a **pH threshold** set by `Kw` and `Ksp*` with magnesium conservative, pinned in `test_brucite.py`, and a dense run of the archived carbonate case (case03) crosses it where the constants say (`test_sweep_chemistry.py`). The row stays ⏳: a limit is not a parity target, and its numbers live in the PLAN so this note stays uncounted | — | 8 |
+| 195 | **`Ω_brucite` has no parity target** | ⊘ **Not executable** (`no input`) — no reference exists: **the exe does not calculate brucite at all** (it reports `OmegaA`/`OmegaC` only), so an exe comparison is not a valid check, and no field or literature value for dosed seawater is in hand — that is the missing input. What stands in its place: the analytical limit (Ω = 1 is a pH threshold set by `Kw` and `Ksp*` with magnesium conservative, `test_brucite.py`; a dense run of case03 crosses it where the constants say, `test_sweep_chemistry.py`) and the second engine (rows 287–289), which measures the gap between two activity treatments rather than parity. Retagged from ⏳ 2026-09-10 (operator) | — | 8 |
 

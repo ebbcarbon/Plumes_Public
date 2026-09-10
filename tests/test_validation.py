@@ -292,12 +292,13 @@ def test_the_cli_summary_is_plain_ascii(ledger_outcomes) -> None:  # type: ignor
 # ------------------------------------------------------------------ the denominator itself
 
 
-#: Rows in `LEDGER.md` carrying a numeric phase cell, as of 2026-09-09 (row 286 added -- case55,
-#: the site case; before it rows 284, 284b and 285 for case53 and case54). Three rows
+#: Rows in `LEDGER.md` carrying a numeric phase cell, as of 2026-09-09 (rows 287-289 added -- the
+#: Pitzer brucite engine; the same day row 286 for case55, the site case; before them rows 284,
+#: 284b and 285 for case53 and case54). Three rows
 #: are filed under "—" and are not counted here. Not the same as
 #: `LEDGER_ROWS_WITH_NUMBERS`, which counts only the rows carrying a *number* and is the honest
 #: denominator for coverage -- this one is mechanical, and exists purely to notice growth.
-LEDGER_TABLE_ROWS = 320
+LEDGER_TABLE_ROWS = 324
 
 
 def _ledger_rows() -> dict[str, list[int]]:

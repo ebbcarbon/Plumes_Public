@@ -37,6 +37,7 @@ from plumes2.chem.constants import (
     magnesium_from_salinity,
     solubility_aragonite,
     solubility_calcite,
+    water_fraction,
 )
 
 __all__ = [
@@ -111,7 +112,16 @@ def omega_brucite(
     salinity: ArrayLike,
     solubility: ArrayLike,
 ) -> NDArray[np.float64]:
-    """Brucite saturation state, `[Mg2+] [OH-]^2 / Ksp*`; `hydroxide` in mol/kg.
+    """Brucite saturation state, `m(Mg2+) m(OH-)^2 / Ksp*`; `hydroxide` in mol per kg of solution.
+
+    ✅ **Formed on the molal scale (2026-09-10).** `hydroxide` arrives per kilogram of
+    *solution*, as PyCO2SYS reports it, and so does `magnesium_from_salinity`; `Ksp*` is defined
+    per kilogram of *water*. Both concentrations are divided by `water_fraction(S)` before the
+    product is taken, so the three concentration factors and the constant share one basis. Until
+    this date the product was formed per kg of solution, which read `water_fraction**3` -- 0.91 at
+    S 30.9, 0.90 at S 35 -- *below* the same physics on one basis; that was the one bias in this
+    column that pointed down (PHREEQC_PLAN.md section 8, ledger row 289). In pure water the two
+    bases coincide and nothing changes.
 
     ⭐ **The exe cannot report this**, and for an alkalinity-elevated discharge it is the
     saturation state that matters most: when the feedstock is Mg(OH)2, or whenever the
@@ -136,11 +146,14 @@ def omega_brucite(
     supersaturated in aragonite as a matter of course. Do not infer alkalinity loss from this
     number without a kinetic model.
     """
-    magnesium = magnesium_from_salinity(salinity)
     oh = np.asarray(hydroxide, dtype=np.float64)
     ksp = np.asarray(solubility, dtype=np.float64)
     if np.any(oh < 0):
         raise ValueError("hydroxide must be non-negative")
     if np.any(ksp <= 0):
         raise ValueError("the brucite solubility product must be positive")
-    return np.asarray(magnesium * oh * oh / ksp)
+    # Per kg of solution -> per kg of water, so the product sits on the constant's own scale.
+    per_kg_water = 1.0 / water_fraction(salinity)
+    magnesium = magnesium_from_salinity(salinity) * per_kg_water
+    oh_molal = oh * per_kg_water
+    return np.asarray(magnesium * oh_molal * oh_molal / ksp)

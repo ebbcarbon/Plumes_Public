@@ -213,6 +213,13 @@ _DIMENSIONS: dict[str, str] = {
     "omega_calcite": "dimensionless",
     "omega_aragonite": "dimensionless",
     "omega_brucite": "dimensionless",
+    "omega_brucite_phreeqc": "dimensionless",
+    "ph_total_phreeqc": "dimensionless",
+    "pco2_uatm_phreeqc": "pressure_uatm",
+    "carbonate_umol_kg_phreeqc": "concentration_molal",
+    "bicarbonate_umol_kg_phreeqc": "concentration_molal",
+    "omega_calcite_phreeqc": "dimensionless",
+    "omega_aragonite_phreeqc": "dimensionless",
     # --- dissolved oxygen ---
     # mg/L, and *not* switchable: it is the unit the exe prints and the unit a DO standard is
     # written in, so there is no second representation to offer.

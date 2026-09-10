@@ -105,6 +105,11 @@ def _command_run(args: argparse.Namespace) -> int:
             f", omega_brucite {frame['omega_brucite'].iloc[0]:.3g}"
             f" -> {frame['omega_brucite'].iloc[-1]:.3g}"
         )
+        if "omega_brucite_phreeqc" in frame.columns:
+            print(
+                f"  omega_brucite (PHREEQC) {frame['omega_brucite_phreeqc'].iloc[0]:.3g}"
+                f" -> {frame['omega_brucite_phreeqc'].iloc[-1]:.3g}"
+            )
         peak = float(frame["omega_brucite"].max())
         if peak > 1.0:
             print(
@@ -272,6 +277,18 @@ def _command_info(args: argparse.Namespace) -> int:
         f"stop at surface {case.near_field.stop_at_surface}, "
         f"bottom {case.near_field.stop_at_bottom}"
     )
+    # The one place a unit can surprise someone: a `.prj` stores each column in whatever unit
+    # its selector says, and the GUI shows that number in that unit. Say which before the GUI does.
+    from plumes2.io.prj import read_prj
+    from plumes2.io.project import prj_from_case, written_units
+
+    path = Path(args.case)
+    if path.suffix.lower() in _PRJ_SUFFIXES:
+        stored, label = written_units(read_prj(path)), "stored in the .prj"
+    else:
+        stored, label = written_units(prj_from_case(case)), "a written .prj would store"
+    detail = "; ".join(stored) if stored else "every table in its primary unit (m, MGD, degC)"
+    print(f"  units         {label}: {detail}")
     return 0
 
 

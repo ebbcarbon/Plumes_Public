@@ -222,3 +222,23 @@ class TestStrictness:
     def test_row_width_is_checked(self) -> None:
         with pytest.raises(UnknownUnitFlagError, match="expected 2 values"):
             convert_row_to_si(TableKind.MIXING_ZONE, [1, 1, 1], [1.0, 2.0, 3.0])
+
+
+def test_written_units_names_every_column_stored_off_its_primary_unit() -> None:
+    """`plumes2 info` and the experiment note print this, so a `.prj` in feet cannot surprise.
+
+    case55's as-run project carries the site's spacing and both mixing-zone distances in feet --
+    the writer's precision-first choice (2.00 ft is exact, 0.610 m is not) -- and nothing else off
+    its primary unit; the upstream example is all-metric and yields nothing.
+    """
+    from plumes2.io.project import written_units
+
+    stored = written_units(
+        read_prj(REFERENCE_CASES / "case55_macoma_site" / "asrun_macoma_acute.prj")
+    )
+    assert stored == [
+        "diffuser.port_spacing: 2 ft (selector 2)",
+        "mixing_zone.acute_distance: 20.7 ft (selector 2)",
+        "mixing_zone.chronic_distance: 207 ft (selector 2)",
+    ]
+    assert written_units(read_prj(UPSTREAM / "Example_project" / "Example_project.prj")) == []

@@ -23,6 +23,8 @@ from plumes2.results import (
     FARFIELD_COLUMNS,
     NEARFIELD_COLUMNS,
     OXYGEN_COLUMNS,
+    PHREEQC_COLUMNS,
+    PITZER_COLUMNS,
 )
 
 
@@ -58,6 +60,8 @@ def test_the_registry_carries_nothing_the_outputs_do_not() -> None:
     known = {
         *NEARFIELD_COLUMNS,
         *CHEMISTRY_COLUMNS,
+        *PITZER_COLUMNS,
+        *PHREEQC_COLUMNS,
         *OXYGEN_COLUMNS,
         *FARFIELD_COLUMNS,
         # A frame adapted from an exe `.dat` carries the exe's own pH and saturation states too.

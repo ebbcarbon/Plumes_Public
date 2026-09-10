@@ -12,7 +12,7 @@ from plumes2.io.ambient_csv import ambient_from_files, read_levels_csv
 from plumes2.io.csv_tables import CsvRow, CsvTable, TableKind, read_csv_table, write_csv_table
 from plumes2.io.dat import DatFile, read_dat
 from plumes2.io.prj import PrjFile, PrjTable, read_prj, write_prj
-from plumes2.io.project import Project, load_project, prj_from_case
+from plumes2.io.project import Project, load_project, prj_from_case, written_units
 from plumes2.io.yaml_case import dump_case, dumps_case, load_case, loads_case
 
 __all__ = [
@@ -36,4 +36,5 @@ __all__ = [
     "read_prj",
     "write_csv_table",
     "write_prj",
+    "written_units",
 ]

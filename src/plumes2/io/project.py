@@ -42,7 +42,7 @@ from plumes2.config import (
 from plumes2.io.csv_tables import CsvTable, TableKind, read_csv_table
 from plumes2.io.fortran import format_e, parse_e
 from plumes2.io.prj import TABLE_ROWS, PrjFile, PrjTable, read_prj
-from plumes2.units import convert_row_to_si, evidenced_options
+from plumes2.units import convert_row_to_si, evidenced_options, selector_for_column, unit_for
 
 __all__ = [
     "Project",
@@ -461,3 +461,35 @@ def prj_from_case(
             template.farfield_plot_variables if template else _DEFAULT_FARFIELD_VARIABLES
         ),
     )
+
+
+def written_units(prj: PrjFile) -> list[str]:
+    """The unit each `.prj` column is *stored* in, for every column not in its primary unit.
+
+    The selectors rescale silently, so a person opening the file in the GUI sees the stored
+    number in the stored unit -- `2.00` under the feet flag where the case said 0.6096 m. This is
+    the line that says so before the GUI does. `prj_from_case` picks, per value, the evidenced unit
+    that survives the format's three significant figures best (`_best_selector`), so a metric case
+    can legitimately come out in feet or MGD; the exe reads either as written (ledger row 290,
+    case55), a reader may not. One entry per non-primary column, using the first row --
+    `table.column: stored value unit (selector n)` -- and an empty list when every table is in its
+    primary unit (m, MGD, degC, m/s, mg/L, 1/day). Printed by `plumes2 info` and in every
+    experiment note.
+    """
+    out: list[str] = []
+    for attribute, kind in (
+        ("diffuser", TableKind.DIFFUSER),
+        ("effluent", TableKind.EFFLUENT),
+        ("mixing_zone", TableKind.MIXING_ZONE),
+        ("ambient", TableKind.AMBIENT),
+    ):
+        table: PrjTable = getattr(prj, attribute)
+        first = table.rows[0] if table.rows else []
+        for index, column in enumerate(kind.column_names):
+            selector = selector_for_column(kind, table.unit_flags, index)
+            if selector == 1:
+                continue
+            unit = unit_for(kind, column, selector)
+            value = f"{first[index]:g} " if index < len(first) else ""
+            out.append(f"{attribute}.{column}: {value}{unit.name} (selector {selector})")
+    return out

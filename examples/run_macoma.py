@@ -20,7 +20,7 @@ Run it:
 
     .venv/Scripts/python examples/run_macoma.py
 
-`DOSE_TA` is the knob. At the intake DIC (2092 umol/kg, the ambient's), TA below ~3660
+`DOSE_TA` is the knob. At the intake DIC (2092 umol/kg, the ambient's), TA below ~3630
 never supersaturates brucite at all; the default here, 6000, is dosed enough that the
 supersaturated window -- centimetres and seconds -- is visible in the output.
 """

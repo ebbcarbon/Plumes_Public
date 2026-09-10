@@ -28,7 +28,7 @@ strictly increasing depths), runs it, and prints:
 
 ```text
 $ .venv/Scripts/python examples/run_from_files.py
-at the port: pH 10.66 (total), omega_brucite 365.46 (an upper bound; see PORTING_THE_PHYSICS.md)
+at the port: pH 10.66 (total), omega_brucite 400.60 (an upper bound; see PORTING_THE_PHYSICS.md)
 termination: oscillation limit
 near-field end: dilution 331.5 at 243.0 s
 
@@ -40,12 +40,12 @@ near field (last rows):
 
 mixing-zone boundaries:
             region dilution ph_total omega_brucite
-acute    nearfield  268.868    8.071         0.001
-chronic   farfield  703.308    8.052         0.001
+acute    nearfield  268.869    8.071         0.001
+chronic   farfield  703.309    8.052         0.001
 ```
 
 That is the package's reason to exist in one screen: an alkalinity-elevated discharge is
-strongly brucite-supersaturated *at the port* (pH 10.7, Ω ≈ 365 — a quantity the exe cannot
+strongly brucite-supersaturated *at the port* (pH 10.7, Ω ≈ 400 — a quantity the exe cannot
 report at all) and back to Ω ≈ 0.001 by the first regulatory boundary.
 
 `tests/test_examples.py` executes this script on every suite run, so the output above cannot
@@ -61,22 +61,22 @@ carbonate chemistry — TA 2146 / DIC 2092 µmol/kg, uniform in depth (operator,
 [`macoma_ambient_chemistry.csv`](macoma_ambient_chemistry.csv), and the alkalinity dose
 (`DOSE_TA`, default 6000 µmol/kg at the intake DIC) as the knob. This is the geometry the
 Phase 9 dose study ran at, and the script's numbers reproduce the study's TA 6000 row
-([`studies/ebb_dose_study/`](../studies/ebb_dose_study/README.md)): port pH 10.990, Ω 1546,
-crossing at dilution 2.54 / 0.16 s / 3.5 cm, boundary dilutions 159 / 360. (The example runs
+([`studies/ebb_dose_study/`](../studies/ebb_dose_study/README.md)): port pH 10.990, Ω 1700,
+crossing at dilution 2.59 / 0.17 s / 3.6 cm, boundary dilutions 159 / 360. (The example runs
 the acute 2 cm/s ambient only; the study reads its chronic boundary on the 5 cm/s ambient, 306.)
 
 ```text
 $ .venv/Scripts/python examples/run_macoma.py
 warning: the seabed is at 17 m (port depth 2 + elevation 15) but the ambient profile stops at 15 m, [...]
 
-port: pH 10.990 (total), omega_brucite 1546.4 (an upper bound)
+port: pH 10.990 (total), omega_brucite 1699.8 (an upper bound)
 termination: oscillation limit; near-field end dilution 158 at 142 s
-flux-averaged omega_brucite falls back through 1 at dilution 2.54, 0.16 s, 3.5 cm from the port (nearfield); the parabolic centreline crossing sits at twice that dilution
+flux-averaged omega_brucite falls back through 1 at dilution 2.59, 0.17 s, 3.6 cm from the port (nearfield); the parabolic centreline crossing sits at twice that dilution
 
 mixing-zone boundaries:
            region    dilution  ph_total omega_brucite omega_aragonite
-acute    farfield  159.254614   7.80866      0.000623        1.129754
-chronic  farfield  359.788012  7.764697      0.000508          1.0225
+acute    farfield  159.255443  7.808659      0.000685        1.129753
+chronic  farfield  359.789851  7.764697      0.000559        1.022499
 ```
 
 ⚠️ Two unit corrections are applied here, both the same feet-as-metres slip in the archived
@@ -104,4 +104,5 @@ seabed itself, and the profiles are notional because the depth changes with the 
 | the API by task — variants, sweeps, chemistry alone | [USER_GUIDE.md](../USER_GUIDE.md) §4 |
 | a dose–response sweep like the real study | `plumes2.sweep.sweep` (§4.4) and [`studies/ebb_dose_study/`](../studies/ebb_dose_study/README.md) |
 | what to trust, and where the model degrades | [PORTING_THE_PHYSICS.md](../PORTING_THE_PHYSICS.md) |
+| the second brucite engine (PHREEQC / Pitzer), or both engines side by side | `carbonate.pitzer` / `carbonate.solver: all` — [USER_GUIDE.md](../USER_GUIDE.md) §8.4; needs `pip install "plumes2[pitzer]"` |
 | output column definitions | [USER_GUIDE.md](../USER_GUIDE.md) §6 |
